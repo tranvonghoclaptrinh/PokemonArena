@@ -820,6 +820,8 @@
                     break;
                     }
             addLog(`ARENA: ${currentMap.type} field detected!`);
+            const nextMap = AVAILABLE_MAPS[Math.floor(Math.random() * AVAILABLE_MAPS.length)];
+            new Image().src = `images/${nextMap.file}`;
         }
 
         // Hàm bổ trợ để tạo hạt (Tuyết, Mưa, Cát...)
