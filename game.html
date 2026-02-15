@@ -693,6 +693,14 @@
     { file: 'psychic-map.png', type: 'PSYCHIC' } // Thêm mới
 
 ];
+    (function preloadAllAssets() {
+        AVAILABLE_MAPS.forEach(map => {
+            const img = new Image();
+            img.src = `images/${map.file}`;
+            // Log để kiểm tra trong Console (F12) xem ảnh đã tải chưa
+            img.onload = () => console.log(`Preloaded: ${map.file}`);
+        });
+    })();
         
         let currentMap = AVAILABLE_MAPS[0]; 
 
