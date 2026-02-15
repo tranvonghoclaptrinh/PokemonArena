@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokemon Arena - Hit & Shake Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
+        :root {
+            --pk-red: #ff0000;
+            --pk-blue: #3b82f6;
+            --pk-dark: #2a2a2a;
+            --pk-light: #f0f0f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f172a;
+            color: white;
+            overflow: hidden;
+            background-image: radial-gradient(#1e293b 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        .pixel-font { font-family: 'Press Start 2P', cursive; }
+
+        /* Hiệu ứng rung màn hình */
+        @keyframes screen-shake {
+            0% { transform: translate(0, 0); }
+            10% { transform: translate(-4px, -4px); }
+            20% { transform: translate(4px, 4px); }
+            30% { transform: translate(-4px, 4px); }
+            40% { transform: translate(4px, -4px); }
+            50% { transform: translate(-4px, -4px); }
+            60% { transform: translate(4px, 4px); }
+            70% { transform: translate(-4px, 4px); }
+            80% { transform: translate(4px, -4px); }
+            90% { transform: translate(-4px, -4px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        .shake-active { animation: screen-shake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
+#pokedex {
+    background-color: #f0f4f5 !important; /* Màu nền nhẹ cho khung danh sách */
+    background-image: 
+        linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
+    background-size: 20px 20px; /* Tạo họa tiết ô vuông nhỏ như màn hình kỹ thuật số */
+    border: 4px solid #333 !important;
+}
+/* Tìm .battle-scene và thay thuộc tính background bằng ảnh */
+.battle-scene {
+    /* Xóa các dòng background cũ, thay bằng các dòng dưới đây */
+    background-size: 100% 100% !important;
+    background-position: center;
+    background-repeat: no-repeat;
+    image-rendering: pixelated; /* Giúp ảnh map không bị nhòe */
+    
+    position: relative; 
+    width: 100%; 
+    height: 62vh !important; 
+    overflow: visible; 
+    border: 8px solid #333; 
+    box-shadow: inset 0 0 100px rgba(0,0,0,0.2);
+    z-index: 10;
+}
+
+/* Pokemon của mình - Bay lên giữa khung hình */
+/* Pokémon của mình - Chỉnh lại vị trí trên ô đất bên trái */
+.p-platform { 
+    bottom: 120px !important; /* Cao lên một chút để khớp mỏm đá */
+    left: 210px !important;   /* Dịch sang phải một chút (tăng từ mặc định) */
+    right: auto !important;   /* Đảm bảo không bị dính vào lề phải */
+    z-index: 20;
+    transition: all 0.3s ease;
+}
+/* Tùy chỉnh: Thêm hiệu ứng bồng bềnh cho Pokemon đang bay */
+.p-platform img {
+    animation: float-anim 3s ease-in-out infinite;
+}
+
+@keyframes float-anim {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+}
+
+
+
+        #skill-announcement {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            z-index: 100;
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.5);
+            width: 100%;
+        }
+
+        #skill-announcement.active {
+            transform: translate(-50%, -50%) scale(1.3);
+            opacity: 1;
+        }
+
+        .announcement-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .announcement-sprite {
+            width: 160px;
+            height: 160px;
+            image-rendering: pixelated;
+            filter: drop-shadow(0 0 20px rgba(255,255,255,0.9));
+            animation: bounce 0.5s infinite alternate;
+        }
+
+        .announcement-text {
+            text-shadow: 4px 4px 0px #000;
+            filter: drop-shadow(0 0 15px rgba(255,255,255,0.3));
+            letter-spacing: 2px;
+            font-size: 22px;
+            text-transform: uppercase;
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-15px); }
+        }
+
+        .pk-ui-box {
+            background: #f8f8d8; border: 3px solid #383838;
+            padding: 10px 14px; color: #383838;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+            width: 300px; position: absolute;
+            z-index: 10;
+        }
+
+        .p-ui { top: 32px; left: 32px; border-bottom-right-radius: 15px; border-top-left-radius: 15px; }
+        .e-ui { bottom: 32px; right: 32px; border-bottom-left-radius: 15px; border-top-right-radius: 15px; }
+
+        .hp-container {
+            background: #383838; height: 14px; border-radius: 7px;
+            padding: 2px; margin-top: 6px; position: relative;
+            margin-left: 20px;
+        }
+
+        .hp-label {
+            position: absolute; left: -24px; top: -1px;
+            font-size: 9px; font-weight: bold; color: #ffde00;
+            text-shadow: 1px 1px 0 #000;
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        .hp-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease-in-out; }
+        .hp-green { background: #70f8a8; box-shadow: 0 0 5px #70f8a8; }
+        .hp-yellow { background: #f8e030; }
+        .hp-red { background: #f85838; }
+
+        .fury-container { height: 4px; background: #ddd; margin-top: 6px; border-radius: 2px; overflow: hidden; margin-left: 20px; }
+        .fury-fill { height: 100%; background: #30a0e8; transition: width 0.3s; }
+
+.pixel-img { 
+    image-rendering: pixelated; 
+    filter: drop-shadow(5px 10px 0px rgba(0,0,0,0.15)); 
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    /* Đảm bảo Pokemon có vị trí tương đối để nhận z-index */
+    position: relative;
+    z-index: 50; 
+}
+
+.dynamax-active {
+    filter: drop-shadow(0 0 30px #ff0055) brightness(1.3) contrast(1.1) !important;
+    /* Lớp cao nhất để đè lên thanh kỹ năng */
+    z-index: 100 !important; 
+}
+
+        .type-badge-inline { 
+            font-size: 6px; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            color: white; 
+            text-transform: uppercase; 
+            margin-left: 8px; 
+            border: 1px solid rgba(0,0,0,0.1);
+            display: inline-block;
+            font-family: 'Press Start 2P', cursive;
+        }
+/* Hiệu ứng lóa sáng hình tròn tỏa ra */
+.spawn-flash {
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0.8) 30%, rgba(255,255,255,0) 70%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    z-index: 50;
+    pointer-events: none;
+    mix-blend-mode: screen;
+}
+
+@keyframes flash-animation {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+    50% { transform: translate(-50%, -50%) scale(2.5); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+}
+
+.animate-flash {
+    animation: flash-animation 0.6s ease-out forwards;
+}
+
+.control-panel {
+    height: 38vh !important; /* Cố định chiều cao theo 35% màn hình */
+    min-height: 250px;       /* Đảm bảo không quá nhỏ trên màn hình thấp */
+    display: grid;
+    grid-template-columns: 25% 50% 25%; /* Chia tỉ lệ 3 cột như ảnh */
+    background-color: #2a2a2a !important;
+    border-top: 4px solid #000000 !important;
+}
+
+.msg-box {
+    background-color: #1a1a1a !important; /* Màu nền đen sẫm */
+    color: #ffffff !important;
+    border-right: 4px solid #000000;
+    padding: 15px !important;
+    font-size: 11px;
+    height: 100%;
+    overflow-y: auto;    /* Hiện thanh cuộn khi lịch sử quá dài */
+    line-height: 1.6;    /* Khoảng cách dòng cho dễ đọc */
+}
+
+/* Tùy chỉnh dòng thông báo cho chuyên nghiệp */
+.log-entry {
+    border-bottom: 1px solid #333;
+    padding: 5px 0;
+    animation: fadeInLog 0.3s ease-out; /* Hiệu ứng xuất hiện mượt */
+}
+
+@keyframes fadeInLog {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Làm đẹp thanh cuộn */
+.msg-box::-webkit-scrollbar { width: 4px; }
+.msg-box::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+
+.skills-grid {
+    background-color: #334155 !important; 
+    padding: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 10px;
+}
+
+/* Tùy chỉnh nút kỹ năng để giống trong ảnh */
+.btn-pk {
+    font-size: 12px !important;
+    padding: 8px !important;
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-weight: bold;
+    background: #b69595;
+    border: 2px solid #333;
+    box-shadow: 2px 2px 0 #333;
+}
+
+        .btn-pk:hover:not(:disabled) { 
+            background: #e5c5c5; 
+            border-color: #333; 
+            transform: translate(-1px, -1px); 
+            box-shadow: 3px 3px 0 #333; 
+        }
+
+        .btn-dynamax {
+            background: linear-gradient(45deg, #ff0055, #8800ff) !important;
+            color: white !important;
+            border: 2px solid #333 !important;
+            box-shadow: 2px 2px 0 #500 !important;
+        }
+        
+        .btn-dynamax:disabled {
+            background: #9ca3af !important;
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none !important;
+        }
+
+        .btn-ult-disabled { 
+            background: #e5e7eb !important; 
+            border-color: #d1d5db !important; 
+            color: #9ca3af !important; 
+            box-shadow: 1px 1px 0 #9ca3af !important;
+            cursor: not-allowed;
+        }
+
+        .btn-ult-ready { 
+            background: #ffde00 !important; 
+            border-color: #ff8a00 !important; 
+            color: #000 !important; 
+            animation: pulse-gold 1.5s infinite; 
+            box-shadow: 2px 2px 0 #ff8a00 !important;
+            cursor: pointer; 
+        }
+
+
+
+        .switch-btn-card { display: flex; align-items: center; gap: 8px; background: #b00073; border: 2px solid #ccc; border-radius: 8px; padding: 6px 10px; width: 100%; transition: all 0.2s; cursor: pointer; box-shadow: 2px 2px 0 #888; flex-shrink: 0; }
+        .switch-btn-card:hover:not(:disabled) { background: gray; border-color: #333; transform: translateY(-2px); }
+        .switch-btn-card:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; }
+
+.pk-card { 
+    transition: all 0.2s ease-in-out; 
+    color: #333 !important; /* Chữ màu đen xám đậm để nổi bật trên nền sáng */
+    font-weight: bold;
+}
+
+.pk-card span {
+    color: #1a1a1a !important; /* Đảm bảo thẻ span chứa tên luôn rõ ràng */
+    text-shadow: none; /* Xóa bóng đổ nếu có để chữ sắc nét hơn */
+}
+
+.pk-card:hover:not(.selected) { 
+    transform: translateY(-5px) scale(1.05); 
+    background-color: #ffffff; 
+    border-color: #334155; 
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); 
+    z-index: 10; 
+}
+
+.pk-card.selected {
+    background-color: #ffeb3b !important; /* Màu vàng khi được chọn */
+    border-color: #ff9800 !important;
+}
+        @keyframes hit-shake-pkm {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(-8px, 4px); }
+            50% { transform: translate(8px, -4px); }
+        }
+        .hit-effect { animation: hit-shake-pkm 0.2s ease-in-out; }
+        
+        @keyframes pulse-gold { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+
+        .missing-text {
+            position: absolute;
+            color: #ff3e3e;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            text-shadow: 2px 2px 0 #000;
+            z-index: 50;
+            pointer-events: none;
+            animation: float-up 1s ease-out forwards;
+        }
+
+        @keyframes float-up {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-60px); opacity: 0; }
+        }
+
+        .filter-container-wrapper { background: #ffffff; border: 2px solid #e2e8f0; border-radius: 16px; padding: 12px 16px; margin-bottom: 12px; }
+        .filter-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; }
+        .filter-pill { padding: 6px 14px; border-radius: 12px; font-size: 9px; cursor: pointer; white-space: nowrap; color: white; opacity: 0.8; transition: all 0.2s; }
+        .filter-pill.active { opacity: 1; border: 2px solid #000; transform: scale(1.05); }
+
+        .back-btn { background: #ffffff; border: 3px solid #000000; color: #000000; padding: 6px 12px; cursor: pointer; transition: all 0.1s; box-shadow: 3px 3px 0 #000000; display: inline-flex; align-items: center; justify-content: center; }
+        .exit-btn { background: #ef4444; color: white; border: 2px solid black; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 10px; margin-left: 12px; cursor: pointer; box-shadow: 2px 2px 0 black; }
+
+        .mode-selector { display: flex; background: #e2e8f0; padding: 4px; border-radius: 12px; gap: 4px; margin-bottom: 12px; border: 2px solid #cbd5e1; }
+        .mode-btn { flex: 1; padding: 8px; font-size: 8px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; }
+        .mode-btn.active { background: white; border-color: #333; box-shadow: 0 2px 4px rgba(0,0,0,0.1); color: black; }
+
+        #shutdown-screen { position: fixed; inset: 0; background: black; z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; font-family: 'Press Start 2P', cursive; }
+        #shutdown-screen .back-btn { margin-top: 12px; }
+        .legendary-card {
+            border: 2px solid #FFD700 !important;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5) !important;
+            position: relative;
+        }
+        .legendary-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: gold;
+            color: black;
+            font-size: 6px;
+            padding: 2px 4px;
+            border-radius: 4px;
+            border: 1px solid black;
+        }
+
+        #start-btn.ready {
+            opacity: 1 !important;
+            cursor: pointer !important;
+            background-color: #dc2626 !important;
+            border-color: #7f1d1d !important;
+            box-shadow: 0 6px 0 #7f1d1d;
+        }
+.game-wrapper {
+    width: 95vw;            /* Giãn ra 95% chiều ngang màn hình */
+    max-width: 1400px;      /* Giới hạn tối đa để không bị quá to trên màn hình 4K */
+    margin: 0 auto;
+}
+.game-viewport {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+/* Container thời tiết */
+.weather-layer { position: absolute; inset: 0; pointer-events: none; z-index: 15; overflow: hidden; }
+/* --- CẬP NHẬT MỚI: ELECTRIC (Sét từ phía trên) --- */
+.bolt {
+    position: absolute;
+    width: 3px;
+    z-index: 17;
+    filter: drop-shadow(0 0 12px #fff);
+    animation: bolt-fade 0.2s ease-out forwards;
+}
+.bolt-yellow { background: linear-gradient(to bottom, transparent, #ffff00); box-shadow: 0 0 20px #ffff00; }
+.bolt-blue { background: linear-gradient(to bottom, transparent, #00ffff); box-shadow: 0 0 20px #00ffff; }
+
+@keyframes bolt-fade {
+    0% { transform: scaleY(0); opacity: 1; transform-origin: top; }
+    50% { transform: scaleY(1); opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* Hiệu ứng Psychic - Lóe sáng liên tục từ 4 góc */
+.psychic-corner {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(191, 0, 255, 0.4) 0%, transparent 70%);
+    filter: blur(30px);
+    z-index: 15;
+    pointer-events: none;
+    animation: psychic-corner-flash 1.5s ease-in-out infinite alternate;
+}
+
+.top-left { top: -50px; left: -50px; }
+.top-right { top: -50px; right: -50px; }
+.bottom-left { bottom: -50px; left: -50px; }
+.bottom-right { bottom: -50px; right: -50px; }
+
+@keyframes psychic-corner-flash {
+    0% { transform: scale(1); opacity: 0.3; }
+    100% { transform: scale(1.5); opacity: 0.8; filter: hue-rotate(45deg) blur(50px); }
+}
+
+/* Lớp phủ màu tím nhẹ toàn màn hình để đồng bộ */
+.psychic-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(191, 0, 255, 0.05);
+    z-index: 14;
+    animation: psychic-pulse-bg 3s ease-in-out infinite;
+}
+
+@keyframes psychic-pulse-bg {
+    0%, 100% { opacity: 0.2; }
+    50% { opacity: 0.5; }
+}
+
+/* Mưa rơi (Water Map) - Rơi nhanh, mảnh */
+.rain { 
+    width: 2px; 
+    height: 60px; 
+    background: rgba(255, 255, 255, 0.4); 
+    position: absolute; 
+    top: -100px; /* Bắt đầu từ ngoài map */
+    animation: rain-fall-down 0.8s linear infinite; 
+}
+
+/* Lá rơi (Grass Map) - Rơi chậm, xoay */
+.leaf { 
+    position: absolute; 
+    width: 15px; 
+    height: 15px; 
+    background: #78C850; 
+    border-radius: 2px 10px; 
+    top: -50px; 
+    animation: leaf-fall-down 4s linear infinite; 
+}
+
+/* Tuyết rơi (Ice Map) - Rơi nhẹ, lơ lửng */
+.snow { 
+    position: absolute; 
+    width: 8px; 
+    height: 8px; 
+    background: white; 
+    border-radius: 50%; 
+    filter: blur(1px); 
+    top: -20px;
+    animation: snow-fall-down 5s linear infinite; 
+}
+
+/* Animation Keyframes */
+@keyframes rain-fall-down { 
+    to { transform: translateY(900px) translateX(50px); } 
+}
+
+@keyframes leaf-fall-down { 
+    0% { transform: translate(0, 0) rotate(0deg); opacity: 0; } 
+    10% { opacity: 1; }
+    100% { transform: translate(200px, 800px) rotate(720deg); opacity: 0; } 
+}
+
+@keyframes snow-fall-down { 
+    0% { transform: translate(0, 0); opacity: 0; } 
+    10% { opacity: 1; }
+    100% { transform: translate(40px, 800px); opacity: 0; } 
+}
+
+/* --- ROCK MAP: Bão cát vệt dài chéo --- */
+.sand {
+    position: absolute;
+    width: 120px; 
+    height: 2px;
+    background: linear-gradient(to right, transparent, rgba(210, 180, 140, 0.7), transparent);
+    filter: blur(1px);
+    animation: sand-drift-new 0.7s linear infinite;
+    z-index: 15;
+}
+@keyframes sand-drift-new {
+    0% { transform: translate(-200px, -100px) rotate(10deg); opacity: 0; }
+    50% { opacity: 1; }
+    100% { transform: translate(1200px, 200px) rotate(10deg); opacity: 0; }
+}
+
+/* --- FIRE MAP: Ngọn lửa to bốc lên --- */
+.ember {
+    position: absolute;
+    width: 15px; height: 15px; 
+    border-radius: 50% 0 50% 50%; 
+    filter: blur(2px);
+    transform: rotate(-45deg);
+    animation: fire-rise-new 1.2s ease-out infinite;
+    z-index: 15;
+}
+@keyframes fire-rise-new {
+    0% { transform: translateY(400px) rotate(-45deg) scale(0.5); opacity: 0; background: #ff4500; }
+    30% { opacity: 1; background: #ff8c00; }
+    60% { background: #ffde00; box-shadow: 0 0 20px #ffde00; }
+    100% { transform: translateY(-50px) rotate(-45deg) scale(2); opacity: 0; background: #ffffff; }
+}
+
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+    <!-- Audio Elements -->
+    <audio id="audio-click" src="audio/click.mp3"></audio>
+    <audio id="audio-dynamax" src="audio/dynamax.mp3"></audio>
+    <audio id="audio-game-over" src="audio/game-over.mp3"></audio>
+    <audio id="audio-low-hp" src="audio/low-hp-pokemon.mp3"></audio>
+    <audio id="audio-missing" src="audio/missing.mp3"></audio>
+    <audio id="audio-nem" src="audio/nem-pokemon-vao-san.mp3"></audio>
+    <audio id="audio-bgm" src="audio/nhac-nen.mp3" loop></audio>
+    <audio id="audio-switch" src="audio/switch-pokemon.mp3"></audio>
+    <audio id="audio-ultimate" src="audio/ultimate.mp3"></audio>
+    <audio id="audio-spawn" src="audio/vao-tran-dau.mp3"></audio>
+    <audio id="audio-win" src="audio/win.mp3"></audio>
+    <audio id="audio-hit" src="audio/hit.mp3"></audio> <!-- THÊM SOUND HIT -->
+
+    <img id="ball-projectile" src="" class="fixed hidden z-[100] w-10 h-10 pixel-img" style="pointer-events: none; transition: none;">
+
+    <div id="shutdown-screen">
+        <div class="text-3xl mb-4 text-red-600">GAME CLOSED</div>
+        <div class="text-[10px] text-gray-400 mb-10">Trainer has left the arena.</div>
+        <button onclick="location.reload()" class="back-btn pixel-font text-[10px] block mx-auto border-2 border-gray-500 text-gray-500">HOME</button>
+        <button onclick="logout()" class="back-btn pixel-font text-[10px] block mx-auto border-2   border-red-500 text-red-500">LOGOUT</button>
+    </div>
+
+    <div id="selection-screen" class="fixed inset-0 z-[100] bg-[#1e1e1e] p-4 flex flex-col items-center">
+        <div class="w-full max-w-6xl h-full flex flex-col">
+<div class="bg-red-600 p-5 rounded-t-3xl border-b-8 border-black flex justify-between items-center shadow-inner">
+    <div class="flex items-center">
+        <div class="flex gap-2 mr-3 bg-[#333] p-2 rounded-full border-2 border-black shadow-lg">
+            <div class="w-6 h-6 rounded-full bg-blue-400 border-2 border-white animate-pulse shadow-[0_0_15px_rgba(96,165,250,0.9)]"></div>
+            <div class="flex gap-1 items-start mt-1">
+                <div class="w-2 h-2 rounded-full bg-red-500 border border-black"></div>
+                <div class="w-2 h-2 rounded-full bg-yellow-400 border border-black"></div>
+                <div class="w-2 h-2 rounded-full bg-green-500 border border-black"></div>
+            </div>
+        </div>
+        <h1 class="pixel-font text-white text-xl ml-2">Pokédex Arena 120</h1>
+    </div>
+
+    <div class="flex items-center">
+        <div class="bg-black/20 px-4 py-2 rounded-full text-white pixel-font text-[10px]">
+            Team: <span id="count" class="text-yellow-400">0</span>/<span id="max-count">3</span>
+        </div>
+        <button onclick="quitGame()" class="exit-btn pixel-font ml-3">X</button>
+    </div>
+</div>
+            <div class="bg-[#e0e7e9] flex-grow p-6 rounded-b-3xl border-x-8 border-b-8 border-black flex flex-col overflow-hidden relative">
+                <div class="mode-selector pixel-font">
+                    <button id="mode-easy" onclick="setDifficulty('EASY')" class="mode-btn active">EASY (3 PKM)</button>
+                    <button id="mode-med" onclick="setDifficulty('MEDIUM')" class="mode-btn">MEDIUM (4 PKM)</button>
+                    <button id="mode-hard" onclick="setDifficulty('HARD')" class="mode-btn">HARD (5 PKM)</button>
+                </div>
+                <div class="filter-container-wrapper"><div id="filter-container" class="filter-scroll"></div></div>
+                <div id="pokedex" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-10 gap-4 mb-6 overflow-y-auto p-4 bg-slate-50 rounded-2xl"></div>
+                <button id="start-btn" onclick="startGame()" disabled class="pixel-font bg-red-600 text-white px-10 py-5 rounded-xl border-b-8 border-red-900 opacity-50 cursor-not-allowed transition-all">START BATTLE</button>
+            </div>
+        </div>
+    </div>
+<div class="game-viewport">
+<div class="game-wrapper">
+    <div id="battle-screen" class="hidden w-full bg-black border-[10px] border-black rounded-lg shadow-2xl overflow-hidden relative">
+        <button onclick="backToMenu()" class="absolute top-4 right-4 z-50 back-btn pixel-font text-[8px]">&lt; BACK</button>
+
+        <div id="battle-dimmer"></div>
+
+        <div id="skill-announcement" class="pixel-font">
+            <div class="announcement-content">
+                <img id="announcement-pkm-img" src="" class="announcement-sprite">
+                <div id="announcement-skill-name" class="announcement-text">SKILL NAME</div>
+            </div>
+        </div>
+
+        <div class="battle-scene" id="main-battle-scene">
+            <div id="thunder-overlay" class="thunder-flash"></div>
+            <div id="weather-container" class="weather-layer"></div>
+            <div class="grass-platform e-platform"></div>
+            <div class="absolute top-16 right-48 flex flex-col items-center"> <img id="e-sprite" src="" class="w-44 h-44 pixel-img opacity-0 scale-0">
+</div>
+            <div class="pk-ui-box e-ui" id="e-ui-container">
+                <div class="flex justify-between items-center pixel-font text-[10px] mb-1">
+                    <div class="flex items-center"><span id="e-name">---</span><span id="e-type-slot"></span></div>
+                    <span>Lv100</span>
+                </div>
+                <div class="flex gap-1 justify-end flex-wrap" id="e-balls"></div>
+                <div class="hp-container"><span class="hp-label">HP</span><div id="e-hp-fill" class="hp-fill hp-green" style="width: 100%"></div></div>
+                <div class="fury-container"><div id="e-fury-fill" class="fury-fill" style="width: 0%"></div></div>
+            </div>
+
+            <div class="grass-platform p-platform"></div>
+            <div class="absolute bottom-24 left-[250px] flex flex-col items-center"> 
+    <img id="p-sprite" src="" class="w-72 h-72 pixel-img opacity-0 scale-0">
+</div>
+            <div class="pk-ui-box p-ui" id="p-ui-container">
+                <div class="flex justify-between items-center pixel-font text-[10px] mb-1">
+                    <div class="flex items-center"><span id="p-name">---</span><span id="p-type-slot"></span></div>
+                    <span>Lv100</span>
+                </div>
+                <div class="flex gap-1 flex-wrap" id="p-balls"></div>
+                <div class="hp-container"><span class="hp-label">HP</span><div id="p-hp-fill" class="hp-fill hp-green" style="width: 100%"></div></div>
+                <div class="flex justify-end pixel-font text-[8px] mt-1"><span id="p-hp-text">100/100</span></div>
+                <div class="fury-container"><div id="p-fury-fill" class="fury-fill" style="width: 0%"></div></div>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div id="log-box" class="msg-box overflow-y-auto pixel-font">Arena Ready... Battle Start!</div>
+            <div id="skills-box" class="skills-grid"></div>
+            <div id="switch-area" class="p-3 border-l-4 border-black bg-[#330033] flex flex-col">
+                <div id="switch-limit-text" class="pixel-font text-[7px] text-red-600 text-center mb-2">Switchs: 2 left</div>
+                <div id="switch-box" class="flex flex-col gap-2 overflow-y-auto flex-grow"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="overlay" class="fixed inset-0 bg-red-600/95 hidden z-[200] flex-col items-center justify-center p-6 text-center">
+        <h2 id="over-title" class="pixel-font text-6xl mb-12 text-white">VICTORY</h2>
+        <div class="flex gap-4">
+            <button onclick="location.reload()" class="pixel-font bg-white text-red-600 px-12 py-5 rounded-lg border-b-4 border-slate-300">RESTART</button>
+            <button onclick="backToMenu()" class="pixel-font bg-slate-800 text-white px-12 py-5 rounded-lg border-b-4 border-black">HOME</button>
+        </div>
+    </div>
+</div>
+</body>
+    <script>
+        const BASE_URL = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/";
+        const TYPE_COLORS = { "ELECTRIC": "#F7D02C", "FIRE": "#F08030", "WATER": "#6890F0", "GRASS": "#78C850", "GHOST": "#705898", "DRAGON": "#7038F8", "NORMAL": "#A8A878", "PSYCHIC": "#F85888", "FIGHTING": "#C03028", "BUG": "#A8B820", "ICE": "#98D8D8", "GROUND": "#E2BF65", "ROCK": "#B6A136", "FAIRY": "#D685AD", "STEEL": "#B7B7CE", "POISON": "#A33EA1", "DARK": "#705848", "FLYING": "#A890F0" };
+        
+        const ACTION_DELAY = 1500; // Đặt về 1.5s cho nhịp độ tốt hơn
+        // Danh sách 4 map của bạn (.png)
+        const AVAILABLE_MAPS = [
+    { file: 'fire-map.png', type: 'FIRE' },
+    { file: 'water-map.png', type: 'WATER' },
+    { file: 'grass-map.png', type: 'GRASS' },
+    { file: 'electric-map.png', type: 'ELECTRIC' },
+    { file: 'rock-map.png', type: 'ROCK' }, // Thêm mới
+    { file: 'ice-map.png', type: 'ICE' },    // Thêm mới
+    { file: 'psychic-map.png', type: 'PSYCHIC' } // Thêm mới
+
+];
+        
+        let currentMap = AVAILABLE_MAPS[0]; 
+
+        let weatherInterval = null; // Cần khai báo biến này ở ngoài hàm
+
+        function applyRandomMap() {
+            currentMap = AVAILABLE_MAPS[Math.floor(Math.random() * AVAILABLE_MAPS.length)];
+            const scene = document.querySelector('.battle-scene');
+            const weatherContainer = document.getElementById('weather-container');
+            
+            // 1. Reset: Xóa hiệu ứng cũ
+            if (weatherInterval) clearInterval(weatherInterval);
+            weatherContainer.innerHTML = '';
+            
+            // 2. Đổi nền
+            scene.style.backgroundImage = `url('images/${currentMap.file}')`;
+            
+            // 3. Tạo hiệu ứng dựa trên Type của Map
+            switch(currentMap.type) {
+                case 'WATER':
+                    // Tạo 50 giọt mưa rơi liên tục
+                    for (let i = 0; i < 50; i++) {
+                        const p = document.createElement('div');
+                        p.className = 'rain';
+                        p.style.left = Math.random() * 100 + '%';
+                        p.style.animationDelay = Math.random() * 1 + 's';
+                        weatherContainer.appendChild(p);
+                    }
+                    break;
+
+                case 'GRASS':
+                    // Tạo 20 lá bay lơ lửng
+                    for (let i = 0; i < 20; i++) {
+                        const p = document.createElement('div');
+                        p.className = 'leaf';
+                        p.style.left = Math.random() * 100 + '%';
+                        p.style.animationDelay = Math.random() * 4 + 's';
+                        // Màu lá ngẫu nhiên một chút cho đẹp
+                        p.style.backgroundColor = Math.random() > 0.5 ? '#78C850' : '#4E8234';
+                        weatherContainer.appendChild(p);
+                    }
+                    break;
+
+                case 'ICE':
+                    // Tạo 60 hạt tuyết rơi
+                    for (let i = 0; i < 60; i++) {
+                        const p = document.createElement('div');
+                        p.className = 'snow';
+                        p.style.left = Math.random() * 100 + '%';
+                        p.style.animationDelay = Math.random() * 5 + 's';
+                        p.style.opacity = Math.random();
+                        weatherContainer.appendChild(p);
+                    }
+                    break;
+                case 'FIRE':
+                    // Tạo 60 ngọn lửa bốc lên từ dưới
+                    for (let i = 0; i < 60; i++) {
+                        const p = document.createElement('div');
+                        p.className = 'ember';
+                        p.style.left = Math.random() * 100 + '%';
+                        p.style.bottom = "-20px";
+                        const size = Math.random() * 15 + 10 + 'px';
+                        p.style.width = size; p.style.height = size;
+                        p.style.animationDuration = (Math.random() * 1 + 0.8) + 's';
+                        p.style.animationDelay = Math.random() * 3 + 's';
+                        weatherContainer.appendChild(p);
+                    }
+                    break;
+
+                case 'ROCK':
+                    // Tạo 80 vệt cát bay chéo
+                    for (let i = 0; i < 80; i++) {
+                        const p = document.createElement('div');
+                        p.className = 'sand';
+                        p.style.left = Math.random() * 100 + '%';
+                        p.style.top = Math.random() * 100 + '%';
+                        p.style.width = (Math.random() * 100 + 100) + 'px';
+                        p.style.animationDuration = (Math.random() * 0.4 + 0.4) + 's';
+                        p.style.animationDelay = Math.random() * 2 + 's';
+                        weatherContainer.appendChild(p);
+                    }
+                    break;
+                case 'PSYCHIC': 
+                    // 1. Tạo lớp phủ nền tím
+                    const pOverlay = document.createElement('div');
+                    pOverlay.className = 'psychic-overlay';
+                    weatherContainer.appendChild(pOverlay);
+
+                    // 2. Tạo 4 góc phát sáng
+                    const corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+                    corners.forEach(pos => {
+                        const corner = document.createElement('div');
+                        corner.className = `psychic-corner ${pos}`;
+                        weatherContainer.appendChild(corner);
+                    });
+
+                    // 3. Hiệu ứng lóe sáng nhanh (Flash) liên tục
+                    weatherInterval = setInterval(() => {
+                        const flash = document.createElement('div');
+                        flash.style.position = 'absolute';
+                        flash.style.inset = '0';
+                        flash.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                        flash.style.zIndex = '16';
+                        weatherContainer.appendChild(flash);
+                        
+                        setTimeout(() => flash.remove(), 100);
+                    }, 2000); // Cứ 2 giây lóe nhẹ một cái toàn màn hình
+                    break;
+                    
+                case 'ELECTRIC':
+                    // Tạo tia sét xanh/vàng chớp nhẹ ở phía trên
+                    weatherInterval = setInterval(() => {
+                        const bolt = document.createElement('div');
+                        const isYellow = Math.random() > 0.5;
+                        bolt.className = `bolt ${isYellow ? 'bolt-yellow' : 'bolt-blue'}`;
+                        
+                        // Vị trí: Ngẫu nhiên chiều ngang, nhưng cố định ở phía trên (top 0-5%)
+                        bolt.style.left = Math.random() * 90 + 5 + '%';
+                        bolt.style.top = '0px'; 
+                        bolt.style.height = (Math.random() * 150 + 100) + 'px'; // Độ dài tia sét
+                        
+                        weatherContainer.appendChild(bolt);
+                        setTimeout(() => bolt.remove(), 200);
+                    }, 1200); // Tốc độ xuất hiện tia sét
+                    break;
+                    }
+            addLog(`ARENA: ${currentMap.type} field detected!`);
+        }
+
+        // Hàm bổ trợ để tạo hạt (Tuyết, Mưa, Cát...)
+        function createParticles(className, count) {
+            const container = document.getElementById('weather-container');
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                p.className = className;
+                p.style.left = Math.random() * 100 + '%';
+                p.style.top = (Math.random() * 100) - 20 + '%';
+                p.style.animationDelay = Math.random() * 5 + 's';
+                container.appendChild(p);
+            }
+        }
+
+        const audioBgm = document.getElementById('audio-bgm');
+        if(audioBgm) audioBgm.volume = 0.3; 
+
+        function playSfx(id) {
+            const el = document.getElementById('audio-' + id);
+            if(el) {
+                el.currentTime = 0;
+                el.play().catch(() => {});
+            }
+        }
+
+        const POKEMON_DB = {};
+        const COMMON_NAMES = ["BULBASAUR", "IVYSAUR", "VENUSAUR", "CHARMANDER", "CHARMELEON", "CHARIZARD", "SQUIRTLE", "WARTORTLE", "BLASTOISE", "CATERPIE", "METAPOD", "BUTTERFREE", "WEEDLE", "KAKUNA", "BEEDRILL", "PIDGEY", "PIDGEOTTO", "PIDGEOT", "RATTATA", "RATICATE", "SPEAROW", "FEAROW", "EKANS", "ARBOK", "PIKACHU", "RAICHU", "SANDSHREW", "SANDSLASH", "NIDORAN♀", "NIDORINA", "NIDOQUEEN", "NIDORAN♂", "NIDORINO", "NIDOKING", "CLEFAIRY", "CLEFABLE", "VULPIX", "NINETALES", "JIGGLYPUFF", "WIGGLYTUFF", "ZUBAT", "GOLBAT", "ODDISH", "GLOOM", "VILEPLUME", "PARAS", "PARASECT", "VENONAT", "VENOMOTH", "DIGLETT", "DUGTRIO", "MEOWTH", "PERSIAN", "PSYDUCK", "GOLDUCK", "MANKEY", "PRIMEAPE", "GROWLITHE", "ARCANINE", "POLIWAG", "POLIWHIRL", "POLIWRATH", "ABRA", "KADABRA", "ALAKAZAM", "MACHOP", "MACHOKE", "MACHAMP", "BELLSPROUT", "WEEPINBELL", "VICTREEBEL", "TENTACOOL", "TENTACRUEL", "GEODUDE", "GRAVELER", "GOLEM", "PONYTA", "RAPIDASH", "SLOWPOKE", "SLOWBRO", "MAGNEMITE", "MAGNETON", "FARFETCH'D", "DODUO", "DODRIO", "SEEL", "DEWGONG", "GRIMER", "MUK", "SHELLDER", "CLOYSTER", "GASTLY", "HAUNTER", "GENGAR", "ONIX", "DROWZEE", "HYPNO", "KRABBY", "KINGLER", "VOLTORB"];
+        COMMON_NAMES.forEach((name, i) => {
+            const id = i + 1;
+            POKEMON_DB[id] = { name, type: Object.keys(TYPE_COLORS)[id % 18], isLeg: false };
+        });
+
+        const LEGENDARY_DATA = {
+            144: { name: "ARTICUNO", type: "ICE", ult: "BLIZZARD", power: 150 },
+            145: { name: "ZAPDOS", type: "ELECTRIC", ult: "THUNDER", power: 150 },
+            146: { name: "MOLTRES", type: "FIRE", ult: "SKY ATTACK", power: 160 },
+            150: { name: "MEWTWO", type: "PSYCHIC", ult: "PSYSTRIKE", power: 180 },
+            151: { name: "MEW", type: "PSYCHIC", ult: "GENESIS SUPERNOVA", power: 190 },
+            243: { name: "RAIKOU", type: "ELECTRIC", ult: "THUNDER FANG", power: 140 },
+            244: { name: "ENTEI", type: "FIRE", ult: "SACRED FIRE", power: 160 },
+            245: { name: "SUICUNE", type: "WATER", ult: "HYDRO PUMP", power: 150 },
+            249: { name: "LUGIA", type: "PSYCHIC", ult: "AEROBLAST", power: 170 },
+            250: { name: "HO-OH", type: "FIRE", ult: "SACRED FIRE", power: 170 },
+            251: { name: "CELEBI", type: "GRASS", ult: "LEAF STORM", power: 150 },
+            382: { name: "KYOGRE", type: "WATER", ult: "ORIGIN PULSE", power: 190 },
+            383: { name: "GROUDON", type: "GROUND", ult: "PRECIPICE BLADES", power: 190 },
+            384: { name: "RAYQUAZA", type: "DRAGON", ult: "DRAGON ASCENT", power: 200 },
+            385: { name: "JIRACHI", type: "STEEL", ult: "DOOM DESIRE", power: 170 },
+            386: { name: "DEOXYS", type: "PSYCHIC", ult: "PSYCHO BOOST", power: 180 },
+            483: { name: "DIALGA", type: "STEEL", ult: "ROAR OF TIME", power: 200 },
+            484: { name: "PALKIA", type: "WATER", ult: "SPACIAL REND", power: 180 },
+            487: { name: "GIRATINA", type: "GHOST", ult: "SHADOW FORCE", power: 190 },
+            493: { name: "ARCEUS", type: "NORMAL", ult: "JUDGMENT", power: 220 }
+        };
+
+        Object.entries(LEGENDARY_DATA).forEach(([id, info]) => {
+            POKEMON_DB[id] = { ...info, isLeg: true };
+        });
+
+        const DATA = Object.keys(POKEMON_DB).map(id => {
+            const p = POKEMON_DB[id];
+            return { 
+                id: parseInt(id), 
+                name: p.name, 
+                type: p.type, 
+                isLegendary: p.isLeg,
+                hp: p.isLeg ? 500 : 200 + (parseInt(id) % 50), 
+                skills: [
+                    {n: "Tackle", d: 40}, 
+                    {n: p.isLeg ? "Hyper Beam" : "Bite", d: p.isLeg ? 90 : 55}, 
+                    {n: p.isLeg ? p.ult : "GIGA IMPACT", d: p.isLeg ? p.power : 140, isU: true}
+                ] 
+            };
+        });
+
+        let selected = [], pTeam = [], eTeam = [], pIdx = 0, eIdx = 0, busy = false, currentFilter = "ALL";
+        let switchCountLeft = 2, difficulty = 'EASY', maxTeamSize = 3;
+        let pDynamaxUsedInGame = false;
+
+        window.addEventListener('click', () => {
+            if(audioBgm && audioBgm.paused && document.getElementById('selection-screen').classList.contains('fixed')) {
+                audioBgm.play().catch(() => {});
+            }
+        }, { once: true });
+
+        function setDifficulty(mode) {
+            playSfx('click');
+            difficulty = mode; selected = [];
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            if(mode === 'EASY') { maxTeamSize = 3; document.getElementById('mode-easy').classList.add('active'); } 
+            else if(mode === 'MEDIUM') { maxTeamSize = 4; document.getElementById('mode-med').classList.add('active'); } 
+            else { maxTeamSize = 5; document.getElementById('mode-hard').classList.add('active'); }
+            document.getElementById('max-count').innerText = maxTeamSize;
+            document.getElementById('count').innerText = 0;
+            updateStartButton();
+            renderPokedex();
+        }
+
+        function updateStartButton() {
+            const btn = document.getElementById('start-btn');
+            if (selected.length === maxTeamSize) {
+                btn.disabled = false;
+                btn.classList.add('ready');
+            } else {
+                btn.disabled = true;
+                btn.classList.remove('ready');
+            }
+        }
+
+        function renderPokedex() {
+            const dex = document.getElementById('pokedex'); dex.innerHTML = '';
+            const filtered = currentFilter === "ALL" ? DATA : DATA.filter(p => p.type === currentFilter);
+            filtered.forEach(p => {
+                const isSel = selected.includes(p.id);
+                const div = document.createElement('div');
+                div.className = `p-2 bg-white border-2 rounded-xl cursor-pointer flex flex-col items-center pk-card ${isSel ? 'selected' : 'border-slate-100'} ${p.isLegendary ? 'legendary-card' : ''}`;
+                div.innerHTML = `${p.isLegendary ? '<span class="legendary-badge pixel-font">LEG</span>' : ''}<img src="${BASE_URL}${p.id}.png" class="w-14 h-14 pixel-img"><span class="text-[6px] pixel-font mt-1 text-center truncate w-full">${p.name}</span><div class="mt-1 px-2 py-0.5 rounded text-[5px] text-white" style="background:${TYPE_COLORS[p.type]}">${p.type}</div>`;
+                div.onclick = () => {
+                    playSfx('click');
+                    if(selected.includes(p.id)) selected = selected.filter(id => id !== p.id);
+                    else if(selected.length < maxTeamSize) selected.push(p.id);
+                    document.getElementById('count').innerText = selected.length;
+                    updateStartButton();
+                    renderPokedex();
+                };
+                dex.appendChild(div);
+            });
+        }
+
+        function generateEnemyTeam() {
+            let legCountNeeded = difficulty === 'EASY' ? 1 : (difficulty === 'MEDIUM' ? 2 : 4);
+            const allLegs = DATA.filter(p => p.isLegendary).sort(() => 0.5 - Math.random());
+            const allCommons = DATA.filter(p => !p.isLegendary).sort(() => 0.5 - Math.random());
+            let team = allLegs.slice(0, legCountNeeded);
+            const remainingPool = [...allLegs.slice(legCountNeeded), ...allCommons].sort(() => 0.5 - Math.random());
+            team = [...team, ...remainingPool.slice(0, maxTeamSize - legCountNeeded)];
+            return team.sort(() => 0.5 - Math.random());
+        }
+
+        async function startGame() {
+            if (selected.length !== maxTeamSize) return;
+            pDynamaxUsedInGame = false;
+            
+            
+            if(audioBgm) audioBgm.pause();
+            
+            playSfx('spawn');
+            switchCountLeft = difficulty === 'EASY' ? 2 : (difficulty === 'MEDIUM' ? 3 : 4);
+            pTeam = selected.map(id => { 
+                const p = DATA.find(x => x.id === id); 
+                return {...p, fury: 0, currentHp: p.hp, s: BASE_URL+"back/"+id+".png", f: BASE_URL+id+".png"}; 
+            });
+            eTeam = generateEnemyTeam().map(x => ({...x, fury: 0, currentHp: x.hp, s: BASE_URL+"back/"+x.id+".png", f: BASE_URL+x.id+".png"}));
+
+            document.getElementById('selection-screen').classList.add('hidden');
+            document.getElementById('battle-screen').classList.remove('hidden');
+            pIdx = eIdx = 0;
+            applyRandomMap();
+            await spawnSequence('player'); 
+            await spawnSequence('enemy');
+            updateUI();
+            addLog(`Arena Ready... Battle Start!`);
+        }
+
+        function backToMenu() {
+            if(audioBgm) audioBgm.play().catch(() => {});
+            document.getElementById('battle-screen').classList.add('hidden');
+            document.getElementById('overlay').classList.add('hidden');
+            document.getElementById('selection-screen').classList.remove('hidden');
+            location.reload();
+        }
+        function logout() {
+            playSfx('click');
+            window.location.href = 'index.html';
+
+        }
+        async function spawnSequence(side) {
+            const ball = document.getElementById('ball-projectile');
+            const isPlayer = (side === 'player');
+            const sprite = document.getElementById(isPlayer ? 'p-sprite' : 'e-sprite');
+            
+            // 1. Xác định dữ liệu
+            const currentPkm = isPlayer ? pTeam[pIdx] : eTeam[eIdx];
+            const ballName = currentPkm.isLegendary ? "ultra-ball.png" : "poke-ball.png";
+
+            // 2. QUAN TRỌNG: Xóa sạch ảnh cũ và ẩn Pokémon đi ngay lập tức
+            sprite.src = ""; 
+            sprite.style.transition = 'none';
+            sprite.style.opacity = '0';
+            sprite.style.transform = 'scale(0)';
+
+            // 3. Gán ảnh mới cho quả bóng và chuẩn bị vị trí ném
+            ball.src = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/" + ballName;
+            
+            const rect = sprite.parentElement.getBoundingClientRect(); // Lấy tọa độ từ khung chứa
+            const targetX = rect.left + rect.width / 2;
+            const targetY = rect.top + rect.height / 2;
+
+            ball.style.transition = 'none';
+            if (isPlayer) {
+                ball.style.left = '-50px'; ball.style.top = '100%';
+            } else {
+                ball.style.left = '100%'; ball.style.top = '-50px';
+            }
+            ball.classList.remove('hidden');
+            void ball.offsetWidth; // Force reflow
+
+            // 4. Bắt đầu ném
+            playSfx('nem');
+            ball.style.transition = 'all 0.7s cubic-bezier(0.25, 1, 0.5, 1)';
+            ball.style.left = `${targetX}px`;
+            ball.style.top = `${targetY}px`;
+            ball.style.transform = 'translate(-50%, -50%) scale(1.5) rotate(720deg)';
+
+            // Trong lúc bóng đang bay, nạp sẵn ảnh mới cho Pokemon (nhưng vẫn đang opacity 0)
+            sprite.src = isPlayer ? currentPkm.s : currentPkm.f;
+
+            await new Promise(r => setTimeout(r, 700));
+
+            // 5. HIỆU ỨNG LÓA SÁNG KHI CHẠM ĐÍCH
+            ball.classList.add('hidden'); 
+
+            const flash = document.createElement('div');
+            flash.className = 'spawn-flash animate-flash';
+            flash.style.left = `${targetX}px`;
+            flash.style.top = `${targetY}px`;
+            document.body.appendChild(flash);
+
+            await new Promise(r => setTimeout(r, 100));
+
+            // 6. Cho Pokémon mới xuất hiện mượt mà
+            sprite.style.transition = 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+            sprite.style.opacity = '1';
+            sprite.style.transform = 'scale(1)';
+
+            setTimeout(() => flash.remove(), 600);
+
+            if (typeof shakeScreen === 'function') shakeScreen('normal');
+            await new Promise(r => setTimeout(r, 300));
+        }
+
+        // HÀM RUNG MÀN HÌNH CHÍNH
+        function shakeScreen(intensity = 'normal') {
+            const scene = document.getElementById('battle-screen');
+            scene.classList.remove('shake-active');
+            void scene.offsetWidth; // Force reflow
+            scene.classList.add('shake-active');
+            if (intensity === 'heavy') scene.style.animationDuration = '0.5s';
+            else scene.style.animationDuration = '0.3s';
+        }
+
+        async function announceSkill(name, color, pkmId) {
+            playSfx('ultimate');
+            const announcer = document.getElementById('skill-announcement');
+            const dimmer = document.getElementById('battle-dimmer');
+            const scene = document.getElementById('main-battle-scene');
+            const imgEl = document.getElementById('announcement-pkm-img');
+            imgEl.src = `${BASE_URL}${pkmId}.png`;
+            document.getElementById('announcement-skill-name').innerText = name;
+            document.getElementById('announcement-skill-name').style.color = color;
+            dimmer.classList.add('active');
+            scene.style.filter = 'blur(4px)';
+            announcer.classList.add('active');
+            await new Promise(r => setTimeout(r, 2000)); 
+            announcer.classList.remove('active');
+            dimmer.classList.remove('active');
+            scene.style.filter = 'none';
+        }
+
+        async function attackAnim(attackerId, defenderId, isDynamax = false) {
+            const atk = document.getElementById(attackerId);
+            const defId = attackerId === 'p-sprite' ? 'e-sprite' : 'p-sprite';
+            const def = document.getElementById(defId);
+            const moveX = attackerId === 'p-sprite' ? 120 : -120;
+            const moveY = attackerId === 'p-sprite' ? -60 : 60;
+
+            if (isDynamax) {
+                    playSfx('dynamax');
+                    atk.classList.add('dynamax-active');
+                    atk.style.transition = 'transform 0.6s';
+                    // Thêm một chút translateY âm để Pokémon nhấc chân lên một chút khi to ra
+                    atk.style.transform = 'scale(2.2) translateY(-10px)';
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+
+            atk.style.transition = 'transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            atk.style.transform = `translate(${moveX}px, ${moveY}px) ${isDynamax ? 'scale(2.2)' : ''}`;
+            
+            // THỜI ĐIỂM VA CHẠM
+            setTimeout(() => {
+                playSfx('hit'); // PHÁT SOUND HIT
+                shakeScreen(isDynamax ? 'heavy' : 'normal'); // RUNG MÀN HÌNH
+                def.classList.add('hit-effect'); // RUNG POKEMON BỊ ĐÁNH
+                setTimeout(() => def.classList.remove('hit-effect'), 200);
+            }, 100);
+
+            await new Promise(r => setTimeout(r, 350));
+            atk.style.transform = 'translate(0, 0) ';
+            atk.classList.remove('dynamax-active');
+            await new Promise(r => setTimeout(r, 400));
+        }
+
+        function showMiss(isEnemy) {
+            playSfx('missing');
+            const container = document.getElementById(isEnemy ? 'e-ui-container' : 'p-ui-container');
+            const miss = document.createElement('div');
+            miss.className = 'missing-text';
+            miss.innerText = 'Missing!';
+            miss.style.left = '50%';
+            miss.style.top = '-20px';
+            container.appendChild(miss);
+            setTimeout(() => miss.remove(), 1000);
+        }
+
+        async function doAction(idx) {
+            if (busy || pIdx >= pTeam.length) return;
+            busy = true; // Khóa hành động để tránh spam click
+
+            const p = pTeam[pIdx];
+            const e = eTeam[eIdx];
+            const s = p.skills[idx];
+
+            // --- FIELD ADVANTAGE LOGIC ---
+            let damage = s.d;
+            if (p.type === currentMap.type) {
+                damage = Math.floor(damage * 1.15);
+                addLog(`[FIELD] ${p.name} is powered up by the ${currentMap.type} terrain!`);
+            }
+            if (checkTypeAdvantage(currentMap.type, p.type)) {
+                damage = Math.floor(damage * 0.8);
+                addLog(`[FIELD] ${p.name} is weakened by the environment!`);
+            }
+            let multiplier = 1.0;
+
+            // Buff for matching type with environment (30% increase)
+            if (p.type === currentMap.type) {
+                multiplier = 1.3;
+                addLog(`[ENV] ${p.name} is empowered by the environment!`);
+            } 
+
+            // Debuff for types countered by environment (30% decrease)
+            const envDebuffs = { 
+                'FIRE': 'WATER', 
+                'WATER': 'ELECTRIC', 
+                'GRASS': 'FIRE', 
+                'ICE': 'FIRE' 
+            };
+
+            if (envDebuffs[p.type] === currentMap.type) {
+                multiplier = 0.7;
+                addLog(`[ENV] ${p.name}'s power is dampened by the environment!`);
+            }
+
+            damage = Math.floor(damage * multiplier);
+            // Accuracy Logic
+            let missChance = 0.1; 
+            if (e.type === currentMap.type) missChance += 0.1; 
+            if (checkTypeAdvantage(currentMap.type, e.type)) missChance -= 0.1; 
+
+            if (s.isU && p.isLegendary) await announceSkill(s.n, TYPE_COLORS[p.type], p.id);
+            
+            addLog(`${p.name} used ${s.n}!`);
+            await attackAnim('p-sprite', 'e-sprite');
+
+            if (Math.random() < missChance) {
+                addLog(`The attack missed!`);
+                showMiss(true);
+            } else {
+                e.currentHp = Math.max(0, e.currentHp - damage);
+                p.fury = s.isU ? 0 : Math.min(100, p.fury + 30);
+            }
+
+            updateUI();
+            await checkDeath();
+            
+            // NẾU ĐỐI THỦ CÒN SỐNG -> GỌI LƯỢT ĐỐI THỦ
+            if (eIdx < eTeam.length && eTeam[eIdx].currentHp > 0) {
+                setTimeout(enemyTurn, 1000); 
+            } else {
+                busy = false; // Reset busy nếu đối thủ đã gục
+                updateUI();
+            }
+        }
+
+        async function useDynamax() {
+            if(busy || pDynamaxUsedInGame) return;
+            busy = true; 
+            pDynamaxUsedInGame = true;
+            const p = pTeam[pIdx], e = eTeam[eIdx];
+            addLog(`${p.name} DYNAMAX!!`);
+            await attackAnim('p-sprite', 'e-sprite', true);
+            e.currentHp = Math.max(0, e.currentHp - 160);
+            p.fury = Math.min(100, p.fury + 50);
+            await checkDeath();
+            updateUI(); 
+            setTimeout(enemyTurn, 800);
+        }
+// Hàm kiểm tra eType có khắc chế pType không
+        function checkTypeAdvantage(attackerType, defenderType) {
+            const chart = {
+                'FIRE': ['GRASS', 'BUG', 'ICE', 'STEEL'],
+                'WATER': ['FIRE', 'GROUND', 'ROCK'],
+                'GRASS': ['WATER', 'GROUND', 'ROCK'],
+                'ELECTRIC': ['WATER', 'FLYING'],
+                'ROCK': ['FIRE', 'ICE', 'FLYING', 'BUG'],
+                'ICE': ['GRASS', 'GROUND', 'FLYING', 'DRAGON'],
+                'PSYCHIC': ['FIGHTING', 'POISON']
+                
+            };
+            return chart[attackerType] ? chart[attackerType].includes(defenderType) : false;
+        }
+        async function enemyTurn() {
+            if (eIdx >= eTeam.length || eTeam[eIdx].currentHp <= 0) {
+                busy = false; 
+                return;
+            }
+            
+            const p = pTeam[pIdx];
+            const e = eTeam[eIdx];
+            const isLastPkmn = (eIdx === eTeam.length - 1);
+            
+            // --- SMART AI DYNAMAX ---
+            let shouldDynamax = false;
+            if (isLastPkmn || checkTypeAdvantage(e.type, p.type) || p.currentHp <= 160) {
+                shouldDynamax = true;
+            }
+
+            if (shouldDynamax && !e.hasUsedDynamax) {
+                e.hasUsedDynamax = true; 
+                addLog(`Enemy ${e.name} activates DYNAMAX!!`);
+                await attackAnim('e-sprite', 'p-sprite', true);
+                p.currentHp = Math.max(0, p.currentHp - 160);
+                e.fury = Math.min(100, e.fury + 50);
+            } 
+            else {
+                const sIdx = (e.fury >= 100) ? 2 : (Math.random() > 0.4 ? 1 : 0);
+                const s = e.skills[sIdx];
+                
+                if (s.isU && e.isLegendary) await announceSkill(s.n, TYPE_COLORS[e.type], e.id);
+                
+                addLog(`Enemy ${e.name} used ${s.n}!`);
+                await attackAnim('e-sprite', 'p-sprite');
+                
+                // --- FIELD CALCULATIONS ---
+                let finalD = s.d;
+                if (e.type === currentMap.type) {
+                    finalD = Math.floor(finalD * 1.15);
+                    addLog(`[FIELD] Enemy powered up by ${currentMap.type} terrain!`);
+                }
+                if (checkTypeAdvantage(currentMap.type, e.type)) {
+                    finalD = Math.floor(finalD * 0.8);
+                    addLog(`[FIELD] Enemy weakened by environment!`);
+                }
+
+                let missChance = 0.1;
+                if (p.type === currentMap.type) missChance += 0.1;
+                
+                if (Math.random() < missChance) { 
+                    addLog(`Enemy attack missed!`); 
+                    showMiss(false);
+                } else {
+                    p.currentHp = Math.max(0, p.currentHp - finalD);
+                    e.fury = s.isU ? 0 : Math.min(100, e.fury + 30);
+                }
+            }
+
+            await checkDeath();
+            updateUI();
+            
+            // QUAN TRỌNG: Mở khóa để người chơi có thể đánh lượt tiếp theo
+            setTimeout(() => {
+                busy = false;
+                updateUI();
+            }, 500);
+}
+
+        async function checkDeath() {
+            const e = eTeam[eIdx], p = pTeam[pIdx];
+            if(e && e.currentHp <= 0) {
+                addLog(`${e.name} fainted!`);
+                eIdx++; 
+                if(eIdx >= eTeam.length) return endGame(true);
+                
+                // Xóa ảnh địch cũ
+                document.getElementById('e-sprite').src = ""; 
+                
+                await new Promise(r => setTimeout(r, 1000));
+                await spawnSequence('enemy');
+            }
+            if(p && p.currentHp <= 0) {
+                addLog(`${p.name} fainted!`);
+                const nxt = pTeam.findIndex(x => x.currentHp > 0);
+                if(nxt === -1) return endGame(false);
+                
+                // Xóa ảnh người chơi cũ
+                document.getElementById('p-sprite').src = ""; 
+                
+                pIdx = nxt; 
+                await new Promise(r => setTimeout(r, 1000));
+                await spawnSequence('player');
+            }
+        }
+
+        async function switchP(i) {
+            if(busy || switchCountLeft <= 0) return;
+            playSfx('switch');
+            busy = true; 
+            switchCountLeft--;
+            
+            addLog(`Come back ${pTeam[pIdx].name}! Go ${pTeam[i].name}!`);
+
+            // --- THÊM DÒNG NÀY ĐỂ XÓA ẢNH CŨ LẬP TỨC ---
+            document.getElementById('p-sprite').src = ""; 
+            // ------------------------------------------
+
+            pIdx = i; 
+            await spawnSequence('player');
+            updateUI(); 
+            setTimeout(enemyTurn, 800);
+        }
+
+        function updateUI() {
+            const p = pTeam[pIdx], e = eTeam[eIdx];
+            if(!p || !e) return;
+            
+            // Cập nhật tên và hệ
+            document.getElementById('p-name').innerText = p.name;
+            document.getElementById('p-type-slot').innerHTML = `<span class="type-badge-inline" style="background:${TYPE_COLORS[p.type]}">${p.type}</span>`;
+            document.getElementById('e-name').innerText = e.name;
+            document.getElementById('e-type-slot').innerHTML = `<span class="type-badge-inline" style="background:${TYPE_COLORS[e.type]}">${e.type}</span>`;
+            
+            // Cập nhật máu
+            document.getElementById('p-hp-fill').style.width = (p.currentHp/p.hp*100) + '%';
+            document.getElementById('p-hp-text').innerText = `${p.currentHp}/${p.hp}`;
+            document.getElementById('e-hp-fill').style.width = (e.currentHp/e.hp*100) + '%';
+            
+            // Cập nhật nộ
+            document.getElementById('p-fury-fill').style.width = Math.min(100, p.fury)+'%';
+            document.getElementById('e-fury-fill').style.width = Math.min(100, e.fury)+'%';
+            
+            // Cập nhật ảnh (Fix lỗi hiện Pokemon cũ)
+            const pSprite = document.getElementById('p-sprite');
+            const eSprite = document.getElementById('e-sprite');
+            if (pSprite.style.opacity !== "0") pSprite.src = p.s;
+            if (eSprite.style.opacity !== "0") eSprite.src = e.f;
+            
+            // Cập nhật trạng thái bóng Poke
+            document.getElementById('p-balls').innerHTML = pTeam.map(pk => `<div class="w-2 h-2 rounded-full ${pk.currentHp <= 0 ? 'bg-gray-400' : 'bg-red-500'}"></div>`).join('');
+            document.getElementById('e-balls').innerHTML = eTeam.map(pk => `<div class="w-2 h-2 rounded-full ${pk.currentHp <= 0 ? 'bg-gray-400' : 'bg-red-500'}"></div>`).join('');
+            
+            if(p.currentHp > 0 && p.currentHp < (p.hp * 0.2)) playSfx('low-hp');
+
+            // VẼ LẠI SKILLS-BOX (Nút chiêu thức)
+            document.getElementById('skills-box').innerHTML = p.skills.map((s, i) => {
+                const ready = !s.isU || p.fury >= 100;
+                return `<button onclick="doAction(${i})" ${busy || !ready ? 'disabled' : ''} class="btn-pk pixel-font ${s.isU ? (ready ? 'btn-ult-ready' : 'btn-ult-disabled') : ''}">${s.n}</button>`;
+            }).join('') + `<button onclick="useDynamax()" ${busy || pDynamaxUsedInGame ? 'disabled' : ''} class="btn-pk btn-dynamax pixel-font">DYNAMAX</button>`;
+            
+            // VẼ LẠI SWITCH-BOX (Nút đổi Pokemon)
+            document.getElementById('switch-box').innerHTML = pTeam.map((pk, i) => {
+                if(i === pIdx) return '';
+                return `<button onclick="switchP(${i})" ${busy || switchCountLeft <= 0 || pk.currentHp <= 0 ? 'disabled' : ''} class="switch-btn-card">
+                    <img src="${pk.f}" class="w-10 h-10 pixel-img">
+                    <div class="flex flex-col flex-1 items-start">
+                        <span class="pixel-font text-[6px] text-left">${pk.name}</span>
+                        <div class="w-full bg-gray-200 h-1 mt-1">
+                            <div class="h-full bg-green-400" style="width: ${pk.currentHp/pk.hp*100}%"></div>
+                        </div>
+                    </div>
+                </button>`;
+            }).join('');
+            
+            document.getElementById('switch-limit-text').innerText = `Switches: ${switchCountLeft} left`;
+        }
+
+        function addLog(m) {
+            const lb = document.getElementById('log-box');
+            
+            // Nếu là tin nhắn khởi tạo mặc định, xóa nó đi để bắt đầu lưu log thật
+            if (lb.innerText === "Arena Ready... Battle Start!") {
+                lb.innerHTML = "";
+            }
+
+            // Tạo phần tử div mới cho mỗi hành động
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<span style="color: #666; margin-right: 5px;">></span> ${m}`;
+            
+            // Đôn tin nhắn cũ xuống bằng cách chèn tin nhắn mới vào đầu (Stack)
+            lb.prepend(entry); 
+            
+            // Tự động cuộn lên đầu để người chơi luôn thấy tin nhắn mới nhất ngay lập tức
+            lb.scrollTop = 0;
+        }
+        
+        function endGame(w) { 
+            playSfx(w ? 'win' : 'game-over');
+            document.getElementById('overlay').classList.replace('hidden', 'flex'); 
+            document.getElementById('over-title').innerText = w ? "VICTORY" : "DEFEAT"; 
+        }
+
+        function quitGame() { 
+            playSfx('click');
+            document.getElementById('shutdown-screen').style.display = 'flex'; 
+        }
+
+        const fCon = document.getElementById('filter-container');
+        ["ALL", ...Object.keys(TYPE_COLORS)].forEach(t => {
+            const b = document.createElement('div'); b.className = `filter-pill pixel-font ${t==='ALL'?'active':''}`;
+            b.innerText = t; b.style.backgroundColor = t === 'ALL' ? '#444' : TYPE_COLORS[t];
+            b.onclick = () => { 
+                playSfx('click');
+                document.querySelectorAll('.filter-pill').forEach(el => el.classList.remove('active')); 
+                b.classList.add('active'); currentFilter = t; renderPokedex(); 
+            };
+            fCon.appendChild(b);
+        });
+        setDifficulty('EASY');
+    </script>
+</body>
+</html>
