@@ -171,8 +171,10 @@ if(audioBgm) audioBgm.volume = 0.3;
 function playSfx(id) {
     const el = document.getElementById('audio-' + id);
     if(el) {
-        el.currentTime = 0;
-        el.play().catch(() => {});
+        el.currentTime = 0; // Reset về đầu để có thể phát liên tục
+        el.play().catch(err => console.log("Audio error:", id, err));
+    } else {
+        console.warn("Missing audio element: audio-" + id);
     }
 }
 
@@ -254,7 +256,39 @@ const DATA = Object.keys(POKEMON_DB).map(id => {
         ] 
     };
 });
+// Bảng tương khắc hệ chuẩn
+const TYPE_CHART = {
+    "FIRE": { superEff: ["GRASS", "ICE", "BUG", "STEEL"], notEff: ["FIRE", "WATER", "ROCK", "DRAGON"] },
+    "WATER": { superEff: ["FIRE", "GROUND", "ROCK"], notEff: ["WATER", "GRASS", "DRAGON"] },
+    "GRASS": { superEff: ["WATER", "GROUND", "ROCK"], notEff: ["FIRE", "GRASS", "POISON", "FLYING", "BUG", "DRAGON", "STEEL"] },
+    "ELECTRIC": { superEff: ["WATER", "FLYING"], notEff: ["ELECTRIC", "GRASS", "DRAGON"], noEff: ["GROUND"] },
+    "ICE": { superEff: ["GRASS", "GROUND", "FLYING", "DRAGON"], notEff: ["FIRE", "WATER", "ICE", "STEEL"] },
+    "FIGHTING": { superEff: ["NORMAL", "ICE", "ROCK", "DARK", "STEEL"], notEff: ["POISON", "FLYING", "PSYCHIC", "BUG", "FAIRY"], noEff: ["GHOST"] },
+    "POISON": { superEff: ["GRASS", "FAIRY"], notEff: ["POISON", "GROUND", "ROCK", "GHOST"], noEff: ["STEEL"] },
+    "GROUND": { superEff: ["FIRE", "ELECTRIC", "POISON", "ROCK", "STEEL"], notEff: ["GRASS", "BUG"], noEff: ["FLYING"] },
+    "FLYING": { superEff: ["GRASS", "FIGHTING", "BUG"], notEff: ["ELECTRIC", "ROCK", "STEEL"] },
+    "PSYCHIC": { superEff: ["FIGHTING", "POISON"], notEff: ["PSYCHIC", "STEEL"], noEff: ["DARK"] },
+    "BUG": { superEff: ["GRASS", "PSYCHIC", "DARK"], notEff: ["FIRE", "FIGHTING", "POISON", "FLYING", "GHOST", "STEEL", "FAIRY"] },
+    "ROCK": { superEff: ["FIRE", "ICE", "FLYING", "BUG"], notEff: ["FIGHTING", "GROUND", "STEEL"] },
+    "GHOST": { superEff: ["PSYCHIC", "GHOST"], notEff: ["DARK"], noEff: ["NORMAL"] },
+    "DRAGON": { superEff: ["DRAGON"], notEff: ["STEEL"], noEff: ["FAIRY"] },
+    "DARK": { superEff: ["PSYCHIC", "GHOST"], notEff: ["FIGHTING", "DARK", "FAIRY"] },
+    "STEEL": { superEff: ["ICE", "ROCK", "FAIRY"], notEff: ["FIRE", "WATER", "ELECTRIC", "STEEL"] },
+    "FAIRY": { superEff: ["FIGHTING", "DRAGON", "DARK"], notEff: ["FIRE", "POISON", "STEEL"] },
+    "NORMAL": { superEff: [], notEff: ["ROCK", "STEEL"], noEff: ["GHOST"] }
+};
 
+// Hàm tính multiplier cho Song hệ
+function getDamageMultiplier(atkType, targetTypes) {
+    let mul = 1.0;
+    if (!TYPE_CHART[atkType]) return mul;
+    targetTypes.forEach(defType => {
+        if (TYPE_CHART[atkType].superEff.includes(defType)) mul *= 2.0;
+        else if (TYPE_CHART[atkType].notEff.includes(defType)) mul *= 0.5;
+        else if (TYPE_CHART[atkType].noEff && TYPE_CHART[atkType].noEff.includes(defType)) mul *= 0;
+    });
+    return mul;
+}
 let selected = [], pTeam = [], eTeam = [], pIdx = 0, eIdx = 0, busy = false, currentFilter = "ALL";
 let switchCountLeft = 2, difficulty = 'EASY', maxTeamSize = 3;
 let pDynamaxUsedInGame = false;
@@ -384,23 +418,53 @@ async function startGame() {
     if (selected.length !== maxTeamSize) return;
     pDynamaxUsedInGame = false;
     
+    // 1. TẮT NHẠC NỀN MENU TRIỆT ĐỂ TRƯỚC KHI LÀM BẤT CỨ GÌ
+    const audioBgm = document.getElementById('audio-bgm');
+    if (audioBgm) {
+        audioBgm.pause();
+        audioBgm.currentTime = 0;
+        // Gán thêm thuộc tính để tránh các hàm khác tự ý play lại
+        audioBgm.dataset.state = "stopped"; 
+    }
     
-    if(audioBgm) audioBgm.pause();
-    
+    // Đợi một nhịp cực ngắn để trình duyệt xử lý xong lệnh dừng
+    await new Promise(r => setTimeout(r, 50));
+
+    // 2. PHÁT TIẾNG SPAWN
     playSfx('spawn');
+    
+    // ... (Giữ nguyên các logic khởi tạo pTeam, eTeam bên dưới)
     switchCountLeft = difficulty === 'EASY' ? 2 : (difficulty === 'MEDIUM' ? 3 : 4);
+    
     pTeam = selected.map(id => { 
         const p = DATA.find(x => x.id === id); 
-        return {...p, fury: 0, currentHp: p.hp, s: BASE_URL+"back/"+id+".png", f: BASE_URL+id+".png"}; 
+        return {
+            ...p, 
+            maxHp: p.hp,
+            currentHp: p.hp, 
+            fury: 0, 
+            s: BASE_URL+"back/"+id+".png", 
+            f: BASE_URL+id+".png"
+        }; 
     });
-    eTeam = generateEnemyTeam().map(x => ({...x, fury: 0, currentHp: x.hp, s: BASE_URL+"back/"+x.id+".png", f: BASE_URL+x.id+".png"}));
+
+    eTeam = generateEnemyTeam().map(x => ({
+        ...x, 
+        maxHp: x.hp,
+        currentHp: x.hp, 
+        fury: 0, 
+        s: BASE_URL+"back/"+x.id+".png", 
+        f: BASE_URL+x.id+".png"
+    }));
 
     document.getElementById('selection-screen').classList.add('hidden');
     document.getElementById('battle-screen').classList.remove('hidden');
     pIdx = eIdx = 0;
+    
     applyRandomMap();
     await spawnSequence('player'); 
     await spawnSequence('enemy');
+    
     updateUI();
     addLog(`Arena Ready... Battle Start!`);
 }
@@ -510,37 +574,171 @@ async function announceSkill(name, color, pkmId) {
     scene.style.filter = 'none';
 }
 
-async function attackAnim(attackerId, defenderId, isDynamax = false) {
+async function attackAnim(attackerId, multiplier = 1, isDynamax = false, damageAmount = 0) {
     const atk = document.getElementById(attackerId);
-    const defId = attackerId === 'p-sprite' ? 'e-sprite' : 'p-sprite';
+    const isPlayer = attackerId === 'p-sprite';
+    const defId = isPlayer ? 'e-sprite' : 'p-sprite';
     const def = document.getElementById(defId);
-    const moveX = attackerId === 'p-sprite' ? 120 : -120;
-    const moveY = attackerId === 'p-sprite' ? -60 : 60;
+    
+    const moveX = isPlayer ? 100 : -100;
+    const moveY = isPlayer ? -40 : 40;
+    
+    const isCrit = multiplier >= 2;
+    const isMissing = multiplier === 0; // Xác định trạng thái hụt đòn
 
+    // 1. CHUẨN BỊ TRƯỚC TẤN CÔNG
     if (isDynamax) {
-            playSfx('dynamax');
-            atk.classList.add('dynamax-active');
-            atk.style.transition = 'transform 0.6s';
-            // Thêm một chút translateY âm để Pokémon nhấc chân lên một chút khi to ra
-            atk.style.transform = 'scale(2.2) translateY(-10px)';
-            await new Promise(r => setTimeout(r, 1000));
+        playSfx('dynamax');
+        atk.classList.add('dynamax-active'); 
+        atk.style.transition = 'transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        atk.style.transform = 'scale(2.2) translateY(-15px)';
+        shakeScreen('heavy');
+        await new Promise(r => setTimeout(r, 1000));
+    } 
+    else if (isCrit) {
+        // CHÍ MẠNG: Hiện vòng sáng, KHÔNG PHÓNG TO
+        atk.classList.add('crit-aura');
+        await new Promise(r => setTimeout(r, 400));
+    }
+
+    // 2. LAO VÀO TẤN CÔNG
+    atk.style.transition = 'transform 0.15s ease-in';
+    const currentScale = isDynamax ? 'scale(2.2)' : 'scale(1)';
+    atk.style.transform = `translate(${moveX}px, ${moveY}px) ${currentScale}`;
+    
+    // 3. THỜI ĐIỂM VA CHẠM (Impact)
+    setTimeout(() => {
+        // --- FIX QUAN TRỌNG: CHỈ HIỆN DAME NẾU KHÔNG PHẢI MISSING ---
+        if (!isMissing && damageAmount > 0) {
+            showFloatingDamage(def, damageAmount, isCrit);
         }
 
-    atk.style.transition = 'transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-    atk.style.transform = `translate(${moveX}px, ${moveY}px) ${isDynamax ? 'scale(2.2)' : ''}`;
-    
-    // THỜI ĐIỂM VA CHẠM
-    setTimeout(() => {
-        playSfx('hit'); // PHÁT SOUND HIT
-        shakeScreen(isDynamax ? 'heavy' : 'normal'); // RUNG MÀN HÌNH
-        def.classList.add('hit-effect'); // RUNG POKEMON BỊ ĐÁNH
-        setTimeout(() => def.classList.remove('hit-effect'), 200);
+        if (isMissing) {
+            playSfx('missing');
+            // Không thực hiện các hiệu ứng rung/lóe sáng khi hụt
+        } else if (isCrit) {
+            playSfx('ultimate'); 
+            shakeScreen('heavy');
+            def.classList.add('hit-effect');
+        } else {
+            playSfx('hit');
+            shakeScreen('normal');
+            def.classList.add('hit-effect');
+        }
+
+        // Dọn dẹp hiệu ứng hit
+        setTimeout(() => def.classList.remove('hit-effect'), 250);
     }, 100);
 
+    // 4. THU HỒI
     await new Promise(r => setTimeout(r, 350));
-    atk.style.transform = 'translate(0, 0) ';
-    atk.classList.remove('dynamax-active');
-    await new Promise(r => setTimeout(r, 400));
+    atk.style.transition = 'transform 0.3s ease-in';
+    atk.style.transform = isDynamax ? 'scale(2.2) translateY(-15px)' : 'translate(0,0)';
+    
+    atk.classList.remove('crit-aura');
+    await new Promise(r => setTimeout(r, 500));
+
+    // 5. KẾT THÚC DYNAMAX
+    if (isDynamax) {
+        atk.style.transition = 'transform 0.5s ease-out';
+        atk.style.transform = 'scale(1) translate(0,0)';
+        atk.classList.remove('dynamax-active');
+        await new Promise(r => setTimeout(r, 500));
+    }
+}
+// Hàm bổ trợ hiển thị sát thương
+function showFloatingDamage(targetEl, amount, isCrit) {
+    const rect = targetEl.getBoundingClientRect();
+    const text = document.createElement('div');
+    
+    text.innerText = isCrit ? `CRITICAL! -${amount}` : `-${amount}`;
+    // Gán class để dùng animation damage-float
+    text.className = `fixed z-[100] pixel-font pointer-events-none damage-text ${isCrit ? 'text-red-500 text-xl' : 'text-white text-lg'}`;
+    
+    // Căn giữa số sát thương trên đầu Pokemon
+    text.style.left = `${rect.left + (rect.width / 2)}px`;
+    text.style.top = `${rect.top}px`;
+    text.style.transform = 'translateX(-50%)';
+    
+    document.body.appendChild(text);
+    setTimeout(() => text.remove(), 800);
+}
+
+// Hàm phụ tạo số sát thương bay lên
+function showFloatingDamage(targetEl, amount, isCritical) {
+    const rect = targetEl.getBoundingClientRect();
+    const damageText = document.createElement('div');
+    
+    damageText.innerText = isCritical ? `CRITICAL! -${amount}` : `-${amount}`;
+    
+    // Style cho chữ
+    damageText.style.position = 'fixed';
+    damageText.style.left = `${rect.left + rect.width / 2}px`;
+    damageText.style.top = `${rect.top}px`;
+    damageText.style.transform = 'translateX(-50%)';
+    damageText.style.zIndex = '100';
+    damageText.style.pointerEvents = 'none';
+    damageText.style.fontWeight = 'bold';
+    damageText.style.fontFamily = "'Press Start 2P', cursive, sans-serif"; // Hoặc pixel-font của bạn
+    damageText.style.fontSize = isCritical ? '20px' : '14px';
+    damageText.style.color = isCritical ? '#ff0000' : '#ffffff'; // ĐỎ nếu chí mạng, TRẮNG nếu thường
+    damageText.style.textShadow = '2px 2px #000';
+    damageText.style.whiteSpace = 'nowrap';
+    
+    // Thêm hiệu ứng bay lên bằng CSS Animation
+    damageText.style.animation = 'damageFloat 1s ease-out forwards';
+    
+    document.body.appendChild(damageText);
+    
+    // Xóa bỏ sau khi diễn xong
+    setTimeout(() => damageText.remove(), 1000);
+}
+async function attack(skillIndex) {
+    if (busy || !pTurn) return;
+    
+    const p = pTeam[pIdx];
+    const e = eTeam[eIdx];
+    const skill = p.skills[skillIndex];
+
+    // --- CẬP NHẬT QUAN TRỌNG TẠI ĐÂY ---
+    // Nếu là chiêu Ultimate (isU), trừ hết nộ NGAY LẬP TỨC 
+    if (skill.isU) {
+        p.fury = 0; 
+        updateUI(); // Cập nhật giao diện thanh nộ biến mất ngay
+    }
+    // ----------------------------------
+
+    busy = true;
+    const atkType = skill.type || p.types[0];
+    const multiplier = getDamageMultiplier(atkType, e.types);
+
+    // Chạy Animation (Vẫn truyền multiplier để hiện hiệu ứng x0 nếu hụt)
+    await attackAnim('p-sprite', multiplier, skill.isU);
+
+    // Tính toán sát thương
+    let damage = Math.floor(skill.d * multiplier * (0.85 + Math.random() * 0.15));
+    
+    // Nếu multiplier = 0 (Missing), damage sẽ bằng 0
+    e.currentHp = Math.max(0, e.currentHp - damage);
+
+    // Log thông báo
+    addLog(`${p.name} used ${skill.n}!`);
+    if (multiplier === 0) {
+        addLog("It had no effect... (Missing) ❌");
+    } else if (multiplier >= 2) {
+        addLog("It's super effective! 🔥");
+    }
+
+    updateUI();
+
+    // Kiểm tra kết thúc hoặc đổi lượt
+    if (e.currentHp <= 0) {
+        setTimeout(checkBattleEnd, 500);
+    } else {
+        pTurn = false;
+        setTimeout(enemyTurn, ACTION_DELAY);
+    }
+    busy = false;
 }
 
 function showMiss(isEnemy) {
@@ -557,74 +755,78 @@ function showMiss(isEnemy) {
 
 async function doAction(idx) {
     if (busy || pIdx >= pTeam.length) return;
-    busy = true; // Khóa hành động để tránh spam click
+    busy = true; 
 
     const p = pTeam[pIdx];
     const e = eTeam[eIdx];
     const s = p.skills[idx];
 
-    // --- FIELD ADVANTAGE LOGIC ---
-    let damage = s.d;
-    if (p.type === currentMap.type) {
-        damage = Math.floor(damage * 1.15);
-        addLog(`[FIELD] ${p.name} is powered up by the ${currentMap.type} terrain!`);
+    // --- 1. RESET NỘ NGAY LẬP TỨC KHI DÙNG ULTIMATE ---
+    if (s.isU) {
+        p.fury = 0; 
+        updateUI(); // Cập nhật ngay thanh nộ biến mất trên giao diện
     }
-    if (checkTypeAdvantage(currentMap.type, p.type)) {
-        damage = Math.floor(damage * 0.8);
-        addLog(`[FIELD] ${p.name} is weakened by the environment!`);
-    }
+
+    // --- 2. TÍNH TOÁN SÁT THƯƠNG (Damage) & MULTIPLIER ---
+    let finalDamage = s.d;
     let multiplier = 1.0;
 
-    // Buff for matching type with environment (30% increase)
+    // Buff/Debuff môi trường
     if (p.type === currentMap.type) {
         multiplier = 1.3;
         addLog(`[ENV] ${p.name} is empowered by the environment!`);
     } 
 
-    // Debuff for types countered by environment (30% decrease)
-    const envDebuffs = { 
-        'FIRE': 'WATER', 
-        'WATER': 'ELECTRIC', 
-        'GRASS': 'FIRE', 
-        'ICE': 'FIRE' 
-    };
-
+    const envDebuffs = { 'FIRE': 'WATER', 'WATER': 'ELECTRIC', 'GRASS': 'FIRE', 'ICE': 'FIRE' };
     if (envDebuffs[p.type] === currentMap.type) {
         multiplier = 0.7;
         addLog(`[ENV] ${p.name}'s power is dampened by the environment!`);
     }
 
-    damage = Math.floor(damage * multiplier);
-    // Accuracy Logic
+    // Áp dụng multiplier vào sát thương thực tế
+    finalDamage = Math.floor(finalDamage * multiplier);
+
+    // Tỉ lệ hụt (Accuracy)
     let missChance = 0.1; 
     if (e.type === currentMap.type) missChance += 0.1; 
-    if (checkTypeAdvantage(currentMap.type, e.type)) missChance -= 0.1; 
-
-    if (s.isU && p.isLegendary) await announceSkill(s.n, TYPE_COLORS[p.type], p.id);
+    
+    // --- 3. THÔNG BÁO & CHIẾU ANIMATION ---
+    if (s.isU && p.isLegendary) {
+        await announceSkill(s.n, TYPE_COLORS[p.type], p.id);
+    }
     
     addLog(`${p.name} used ${s.n}!`);
-    await attackAnim('p-sprite', 'e-sprite');
 
+    // GỌI ANIMATION: Truyền thêm finalDamage để hiện số sát thương
+    // multiplier >= 1.3 được coi là Critical (số đỏ) trong logic này
+    await attackAnim('p-sprite', multiplier, s.isU, finalDamage);
+
+    // --- 4. XỬ LÝ KẾT QUẢ TRÚNG/TRƯỢT ---
     if (Math.random() < missChance) {
         addLog(`The attack missed!`);
         showMiss(true);
+        // Lưu ý: Nếu trượt, nộ Ultimate vẫn mất (đã reset ở bước 1)
     } else {
-        e.currentHp = Math.max(0, e.currentHp - damage);
-        p.fury = s.isU ? 0 : Math.min(100, p.fury + 30);
+        // Trúng đòn
+        e.currentHp = Math.max(0, e.currentHp - finalDamage);
+        
+        // Cộng nộ cho đòn thường, Ultimate không được cộng nộ
+        if (!s.isU) {
+            p.fury = Math.min(100, p.fury + 30);
+        }
     }
 
-    updateUI();
+    // --- 5. CẬP NHẬT TRẠNG THÁI CUỐI LƯỢT ---
+    updateUI(); // Cập nhật máu đối thủ và nộ người chơi
     await checkDeath();
     
-    // NẾU ĐỐI THỦ CÒN SỐNG -> GỌI LƯỢT ĐỐI THỦ
     if (eIdx < eTeam.length && eTeam[eIdx].currentHp > 0) {
         setTimeout(enemyTurn, 1000); 
     } else {
-        busy = false; // Reset busy nếu đối thủ đã gục
+        busy = false; 
         updateUI();
     }
 }
-
 async function useDynamax() {
     if(busy || pDynamaxUsedInGame) return;
     busy = true; 
@@ -671,48 +873,68 @@ async function enemyTurn() {
     if (shouldDynamax && !e.hasUsedDynamax) {
         e.hasUsedDynamax = true; 
         addLog(`Enemy ${e.name} activates DYNAMAX!!`);
-        await attackAnim('e-sprite', 'p-sprite', true);
+        // Dynamax gây sát thương chuẩn 160
+        await attackAnim('e-sprite', 1, true, 160); 
         p.currentHp = Math.max(0, p.currentHp - 160);
         e.fury = Math.min(100, e.fury + 50);
     } 
     else {
+        // Lựa chọn chiêu thức: Ưu tiên chiêu 2 (Ulti) nếu đầy nộ
         const sIdx = (e.fury >= 100) ? 2 : (Math.random() > 0.4 ? 1 : 0);
         const s = e.skills[sIdx];
         
+        // --- QUAN TRỌNG: RESET NỘ KHI DÙNG ULTIMATE (Bất kể trúng/trượt) ---
+        if (s.isU) {
+            e.fury = 0;
+            updateUI(); // Cập nhật để người chơi thấy thanh nộ máy biến mất ngay
+        }
+
         if (s.isU && e.isLegendary) await announceSkill(s.n, TYPE_COLORS[e.type], e.id);
         
         addLog(`Enemy ${e.name} used ${s.n}!`);
-        await attackAnim('e-sprite', 'p-sprite');
         
         // --- FIELD CALCULATIONS ---
-        let finalD = s.d;
+        let baseD = s.d;
+        let multiplier = 1.0;
+
+        // Buff môi trường (30%)
         if (e.type === currentMap.type) {
-            finalD = Math.floor(finalD * 1.15);
-            addLog(`[FIELD] Enemy powered up by ${currentMap.type} terrain!`);
-        }
-        if (checkTypeAdvantage(currentMap.type, e.type)) {
-            finalD = Math.floor(finalD * 0.8);
-            addLog(`[FIELD] Enemy weakened by environment!`);
+            multiplier *= 1.3;
+            addLog(`[ENV] Enemy is empowered by the environment!`);
         }
 
+        // Tính sát thương cuối cùng trước khi chạy animation
+        let finalDamage = Math.floor(baseD * multiplier);
+
+        // Animation tấn công: Truyền thêm finalDamage để hiện chữ sát thương đỏ/trắng
+        await attackAnim('e-sprite', multiplier, s.isU, finalDamage);
+        
+        // Accuracy Logic
         let missChance = 0.1;
         if (p.type === currentMap.type) missChance += 0.1;
         
         if (Math.random() < missChance) { 
             addLog(`Enemy attack missed!`); 
             showMiss(false);
+            // Nộ đã reset ở trên nếu là Ultimate
         } else {
-            p.currentHp = Math.max(0, p.currentHp - finalD);
-            e.fury = s.isU ? 0 : Math.min(100, e.fury + 30);
+            // Trừ máu thực tế
+            p.currentHp = Math.max(0, p.currentHp - finalDamage);
+            
+            // Chỉ cộng nộ cho đòn thường khi trúng đích
+            if (!s.isU) {
+                e.fury = Math.min(100, e.fury + 30);
+            }
         }
     }
 
     await checkDeath();
-    updateUI();
+    updateUI(); // Tự động cập nhật màu HP Bar (Xanh -> Vàng -> Đỏ)
     
-    // QUAN TRỌNG: Mở khóa để người chơi có thể đánh lượt tiếp theo
+    // Mở khóa lượt cho người chơi
     setTimeout(() => {
         busy = false;
+        pTurn = true; 
         updateUI();
     }, 500);
 }
@@ -766,48 +988,72 @@ function updateUI() {
     const p = pTeam[pIdx], e = eTeam[eIdx];
     if(!p || !e) return;
     
-    // Cập nhật tên và hệ
+    // 1. CẬP NHẬT TÊN VÀ SONG HỆ (Duyệt mảng types)
     document.getElementById('p-name').innerText = p.name;
-    document.getElementById('p-type-slot').innerHTML = `<span class="type-badge-inline" style="background:${TYPE_COLORS[p.type]}">${p.type}</span>`;
+    document.getElementById('p-type-slot').innerHTML = p.types.map(t => 
+        `<span class="type-badge-inline ml-1" style="background:${TYPE_COLORS[t]}">${t}</span>`
+    ).join('');
+
     document.getElementById('e-name').innerText = e.name;
-    document.getElementById('e-type-slot').innerHTML = `<span class="type-badge-inline" style="background:${TYPE_COLORS[e.type]}">${e.type}</span>`;
+    document.getElementById('e-type-slot').innerHTML = e.types.map(t => 
+        `<span class="type-badge-inline ml-1" style="background:${TYPE_COLORS[t]}">${t}</span>`
+    ).join('');
     
-    // Cập nhật máu
-    document.getElementById('p-hp-fill').style.width = (p.currentHp/p.hp*100) + '%';
+    // 2. CẬP NHẬT MÁU VÀ MÀU SẮC THANH MÁU
+    const pHPPercent = (p.currentHp / p.hp * 100);
+    const eHPPercent = (e.currentHp / e.hp * 100);
+    
+    const pHPFill = document.getElementById('p-hp-fill');
+    const eHPFill = document.getElementById('e-hp-fill');
+
+    pHPFill.style.width = pHPPercent + '%';
+    eHPFill.style.width = eHPPercent + '%';
+
+    // Đổi màu thanh máu: Xanh (>50%) -> Vàng (>20%) -> Đỏ
+    pHPFill.style.backgroundColor = pHPPercent > 50 ? "#4ade80" : (pHPPercent > 20 ? "#facc15" : "#ef4444");
+    eHPFill.style.backgroundColor = eHPPercent > 50 ? "#4ade80" : (eHPPercent > 20 ? "#facc15" : "#ef4444");
+
     document.getElementById('p-hp-text').innerText = `${p.currentHp}/${p.hp}`;
-    document.getElementById('e-hp-fill').style.width = (e.currentHp/e.hp*100) + '%';
     
-    // Cập nhật nộ
+    // 3. CẬP NHẬT NỘ
     document.getElementById('p-fury-fill').style.width = Math.min(100, p.fury)+'%';
     document.getElementById('e-fury-fill').style.width = Math.min(100, e.fury)+'%';
     
-    // Cập nhật ảnh (Fix lỗi hiện Pokemon cũ)
+    // 4. CẬP NHẬT ẢNH
     const pSprite = document.getElementById('p-sprite');
     const eSprite = document.getElementById('e-sprite');
     if (pSprite.style.opacity !== "0") pSprite.src = p.s;
     if (eSprite.style.opacity !== "0") eSprite.src = e.f;
     
-    // Cập nhật trạng thái bóng Poke
+    // 5. CẬP NHẬT TRẠNG THÁI BÓNG POKE
     document.getElementById('p-balls').innerHTML = pTeam.map(pk => `<div class="w-2 h-2 rounded-full ${pk.currentHp <= 0 ? 'bg-gray-400' : 'bg-red-500'}"></div>`).join('');
     document.getElementById('e-balls').innerHTML = eTeam.map(pk => `<div class="w-2 h-2 rounded-full ${pk.currentHp <= 0 ? 'bg-gray-400' : 'bg-red-500'}"></div>`).join('');
     
+    // Cảnh báo máu thấp
     if(p.currentHp > 0 && p.currentHp < (p.hp * 0.2)) playSfx('low-hp');
 
-    // VẼ LẠI SKILLS-BOX (Nút chiêu thức)
+    // 6. VẼ LẠI SKILLS-BOX
     document.getElementById('skills-box').innerHTML = p.skills.map((s, i) => {
         const ready = !s.isU || p.fury >= 100;
-        return `<button onclick="doAction(${i})" ${busy || !ready ? 'disabled' : ''} class="btn-pk pixel-font ${s.isU ? (ready ? 'btn-ult-ready' : 'btn-ult-disabled') : ''}">${s.n}</button>`;
+        // Lấy màu hệ của chiêu thức (nếu chiêu thức có type riêng, nếu không lấy hệ đầu của Pokemon)
+        const sColor = TYPE_COLORS[s.type] || TYPE_COLORS[p.types[0]];
+        return `<button onclick="doAction(${i})" ${busy || !ready ? 'disabled' : ''} 
+                class="btn-pk pixel-font ${s.isU ? (ready ? 'btn-ult-ready' : 'btn-ult-disabled') : ''}"
+                style="border-bottom-color: ${sColor}">
+                ${s.n}
+                </button>`;
     }).join('') + `<button onclick="useDynamax()" ${busy || pDynamaxUsedInGame ? 'disabled' : ''} class="btn-pk btn-dynamax pixel-font">DYNAMAX</button>`;
     
-    // VẼ LẠI SWITCH-BOX (Nút đổi Pokemon)
+    // 7. VẼ LẠI SWITCH-BOX
     document.getElementById('switch-box').innerHTML = pTeam.map((pk, i) => {
         if(i === pIdx) return '';
+        const hpPct = (pk.currentHp/pk.hp*100);
         return `<button onclick="switchP(${i})" ${busy || switchCountLeft <= 0 || pk.currentHp <= 0 ? 'disabled' : ''} class="switch-btn-card">
             <img src="${pk.f}" class="w-10 h-10 pixel-img">
             <div class="flex flex-col flex-1 items-start">
                 <span class="pixel-font text-[6px] text-left">${pk.name}</span>
                 <div class="w-full bg-gray-200 h-1 mt-1">
-                    <div class="h-full bg-green-400" style="width: ${pk.currentHp/pk.hp*100}%"></div>
+                    <div class="h-full" style="width: ${hpPct}%; background-color: ${hpPct > 50 ? "#4ade80" : (hpPct > 20 ? "#facc15" : "#ef4444")}"></div>
                 </div>
             </div>
         </button>`;

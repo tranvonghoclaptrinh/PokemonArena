@@ -77,16 +77,69 @@ button[onclick="toggleSearch()"] {
     animation: float-anim 3s ease-in-out infinite;
 }
 
+/* Hiệu ứng bay bổng nhẹ nhàng hơn (giảm từ -15px xuống -8px) */
 @keyframes float-anim {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-15px); }
+    50% { transform: translateY(-8px); }
 }
+
+/* Slot kẻ địch */
 .enemy-slot { 
-    bottom: 180px; /* Càng nhỏ thì Pokemon địch càng sát xuống dưới */
+    bottom: 180px; 
     right: 100px; 
 }
 
+/* --- VÒNG SÁNG DƯỚI CHÂN (CHỈ KHI CHÍ MẠNG) --- */
+.crit-aura {
+    position: relative;
+}
+.crit-aura::before {
+    content: "";
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    width: 90px;
+    height: 25px;
+    background: radial-gradient(ellipse, rgba(255, 217, 0, 0.8) 0%, transparent 75%);
+    transform: translateX(-50%) scale(1.5);
+    border-radius: 50%;
+    z-index: -1;
+    animation: crit-glow-fade 0.5s ease-out forwards;
+}
+@keyframes crit-glow-fade {
+    0% { opacity: 0; transform: translateX(-50%) scale(0.5); }
+    50% { opacity: 1; transform: translateX(-50%) scale(1.8); }
+    100% { opacity: 0; transform: translateX(-50%) scale(2); }
+}
 
+/* --- DYNAMAX: DUY NHẤT ĐƯỢC PHÓNG TO + MÂY TRẮNG --- */
+.dynamax-active {
+    filter: drop-shadow(0 0 12px #ff006a) !important;
+}
+.dynamax-active::after {
+    content: "☁️";
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    font-size: 25px;
+    transform: translateX(-50%);
+    animation: dyna-cloud-float 2s infinite ease-in-out;
+}
+@keyframes dyna-cloud-float {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-10px); }
+}
+
+/* --- HIỆU ỨNG TRÚNG ĐÒN (KHÔNG ZOOM) --- */
+.hit-effect {
+    animation: hit-simple 0.2s ease-out;
+}
+@keyframes hit-simple {
+    0% { transform: scale(1); }
+    25% { transform: translateX(-5px); filter: brightness(2) saturate(1.5); }
+    75% { transform: translateX(5px); }
+    100% { transform: scale(1); filter: brightness(1); }
+}
 
         #skill-announcement {
             position: absolute;
@@ -581,56 +634,4 @@ button[onclick="toggleSearch()"] {
     30% { opacity: 1; background: #ff8c00; }
     60% { background: #ffde00; box-shadow: 0 0 20px #ffde00; }
     100% { transform: translateY(-50px) rotate(-45deg) scale(2); opacity: 0; background: #ffffff; }
-}
-/* --- TỐI ƯU GIAO DIỆN CHO MOBILE (DÁN TẠI ĐÂY) --- */
-@media (max-width: 768px) {
-    /* 1. Xếp chồng khu vực đối kháng theo chiều dọc */
-    .bg-\[url\(\'\.\.\/img\/bg-battle\.png\'\)\] {
-        flex-direction: column !important;
-        justify-content: space-around !important;
-        height: 50vh !important; /* Thu nhỏ vùng ảnh để nhường chỗ cho nút bấm */
-    }
-
-    /* 2. Thu nhỏ ảnh Pokemon trên mobile */
-    #e-img, #p-img {
-        width: 100px !important;
-        height: 100px !important;
-    }
-
-    /* 3. Panel điều khiển: Chuyển Log và Nút thành cột dọc thay vì hàng ngang */
-    .control-panel {
-        flex-direction: column !important;
-        height: auto !important;
-        border-left: none !important;
-    }
-
-    /* 4. Log Box: Giới hạn chiều cao */
-    #log-box {
-        height: 100px !important;
-        border-right: none !important;
-        border-bottom: 4px solid black !important;
-        font-size: 8px !important;
-    }
-
-    /* 5. Skills Grid: Chia 2 cột để ngón cái dễ chạm */
-    .skills-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 6px !important;
-        padding: 8px !important;
-    }
-
-    /* 6. Khu vực Switch: Chuyển thành hàng ngang nằm dưới cùng */
-    #switch-area {
-        flex-direction: row !important;
-        width: 100% !important;
-        border-left: none !important;
-        border-top: 4px solid black !important;
-        padding: 10px !important;
-    }
-    
-    #switch-box {
-        flex-direction: row !important;
-        gap: 8px !important;
-        overflow-x: auto !important; /* Cho phép vuốt ngang để chọn Pokemon dự phòng */
-    }
 }
