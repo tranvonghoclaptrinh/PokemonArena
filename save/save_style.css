@@ -1,0 +1,583 @@
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
+        :root {
+            --pk-red: #ff0000;
+            --pk-blue: #3b82f6;
+            --pk-dark: #2a2a2a;
+            --pk-light: #f0f0f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f172a;
+            color: white;
+            overflow: hidden;
+            background-image: radial-gradient(#1e293b 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        .pixel-font { font-family: 'Press Start 2P', cursive; }
+
+        /* Hiệu ứng rung màn hình */
+        @keyframes screen-shake {
+            0% { transform: translate(0, 0); }
+            10% { transform: translate(-4px, -4px); }
+            20% { transform: translate(4px, 4px); }
+            30% { transform: translate(-4px, 4px); }
+            40% { transform: translate(4px, -4px); }
+            50% { transform: translate(-4px, -4px); }
+            60% { transform: translate(4px, 4px); }
+            70% { transform: translate(-4px, 4px); }
+            80% { transform: translate(4px, -4px); }
+            90% { transform: translate(-4px, -4px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        .shake-active { animation: screen-shake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
+
+/* Tìm .battle-scene và thay thuộc tính background bằng ảnh */
+.battle-scene {
+    /* Xóa các dòng background cũ, thay bằng các dòng dưới đây */
+    background-size: 100% 100% !important;
+    background-position: center;
+    background-repeat: no-repeat;
+    image-rendering: pixelated; /* Giúp ảnh map không bị nhòe */
+    
+    position: relative; 
+    width: 100%; 
+    height: 62vh !important; 
+    overflow: visible; 
+    border: 8px solid #333; 
+    box-shadow: inset 0 0 100px rgba(0,0,0,0.2);
+    z-index: 10;
+}
+button[onclick="toggleSearch()"] {
+    position: relative;
+    z-index: 999;
+    image-rendering: pixelated;
+}
+#direct-search::placeholder { color: transparent; }
+#direct-search:focus::placeholder { color: rgba(255, 255, 255, 0.4); }
+#direct-search:not(:focus) { 
+    color: transparent; 
+}
+
+/* Pokemon của mình - Bay lên giữa khung hình */
+/* Pokémon của mình - Chỉnh lại vị trí trên ô đất bên trái */
+.p-platform { 
+    bottom: 120px !important; /* Cao lên một chút để khớp mỏm đá */
+    left: 210px !important;   /* Dịch sang phải một chút (tăng từ mặc định) */
+    right: auto !important;   /* Đảm bảo không bị dính vào lề phải */
+    z-index: 20;
+    transition: all 0.3s ease;
+}
+/* Tùy chỉnh: Thêm hiệu ứng bồng bềnh cho Pokemon đang bay */
+.p-platform img {
+    animation: float-anim 3s ease-in-out infinite;
+}
+
+@keyframes float-anim {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+}
+.enemy-slot { 
+    bottom: 180px; /* Càng nhỏ thì Pokemon địch càng sát xuống dưới */
+    right: 100px; 
+}
+
+
+
+        #skill-announcement {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            z-index: 100;
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.5);
+            width: 100%;
+        }
+
+        #skill-announcement.active {
+            transform: translate(-50%, -50%) scale(1.3);
+            opacity: 1;
+        }
+
+        .announcement-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .announcement-sprite {
+            width: 160px;
+            height: 160px;
+            image-rendering: pixelated;
+            filter: drop-shadow(0 0 20px rgba(255,255,255,0.9));
+            animation: bounce 0.5s infinite alternate;
+        }
+
+        .announcement-text {
+            text-shadow: 4px 4px 0px #000;
+            filter: drop-shadow(0 0 15px rgba(255,255,255,0.3));
+            letter-spacing: 2px;
+            font-size: 22px;
+            text-transform: uppercase;
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-15px); }
+        }
+
+        .pk-ui-box {
+            background: #f8f8d8; border: 3px solid #383838;
+            padding: 10px 14px; color: #383838;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+            width: 300px; position: absolute;
+            z-index: 10;
+        }
+
+        .p-ui { top: 32px; left: 32px; border-bottom-right-radius: 15px; border-top-left-radius: 15px; }
+        .e-ui { bottom: 32px; right: 32px; border-bottom-left-radius: 15px; border-top-right-radius: 15px; }
+
+        .hp-container {
+            background: #383838; height: 14px; border-radius: 7px;
+            padding: 2px; margin-top: 6px; position: relative;
+            margin-left: 20px;
+        }
+
+        .hp-label {
+            position: absolute; left: -24px; top: -1px;
+            font-size: 9px; font-weight: bold; color: #ffde00;
+            text-shadow: 1px 1px 0 #000;
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        .hp-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease-in-out; }
+        .hp-green { background: #70f8a8; box-shadow: 0 0 5px #70f8a8; }
+        .hp-yellow { background: #f8e030; }
+        .hp-red { background: #f85838; }
+
+        .fury-container { height: 4px; background: #ddd; margin-top: 6px; border-radius: 2px; overflow: hidden; margin-left: 20px; }
+        .fury-fill { height: 100%; background: #30a0e8; transition: width 0.3s; }
+
+.pixel-img { 
+    image-rendering: pixelated; 
+    filter: drop-shadow(5px 10px 0px rgba(0,0,0,0.15)); 
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    /* Đảm bảo Pokemon có vị trí tương đối để nhận z-index */
+    position: relative;
+    z-index: 50; 
+}
+
+.dynamax-active {
+    filter: drop-shadow(0 0 30px #ff0055) brightness(1.3) contrast(1.1) !important;
+    /* Lớp cao nhất để đè lên thanh kỹ năng */
+    z-index: 100 !important; 
+}
+
+        .type-badge-inline { 
+            font-size: 6px; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            color: white; 
+            text-transform: uppercase; 
+            margin-left: 8px; 
+            border: 1px solid rgba(0,0,0,0.1);
+            display: inline-block;
+            font-family: 'Press Start 2P', cursive;
+        }
+/* Hiệu ứng lóa sáng hình tròn tỏa ra */
+.spawn-flash {
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0.8) 30%, rgba(255,255,255,0) 70%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    z-index: 50;
+    pointer-events: none;
+    mix-blend-mode: screen;
+}
+
+@keyframes flash-animation {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+    50% { transform: translate(-50%, -50%) scale(2.5); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+}
+
+.animate-flash {
+    animation: flash-animation 0.6s ease-out forwards;
+}
+
+.control-panel {
+    height: 38vh !important; /* Cố định chiều cao theo 35% màn hình */
+    min-height: 250px;       /* Đảm bảo không quá nhỏ trên màn hình thấp */
+    display: grid;
+    grid-template-columns: 25% 50% 25%; /* Chia tỉ lệ 3 cột như ảnh */
+    background-color: #2a2a2a !important;
+    border-top: 4px solid #000000 !important;
+}
+
+.msg-box {
+    background-color: #1a1a1a !important; /* Màu nền đen sẫm */
+    color: #ffffff !important;
+    border-right: 4px solid #000000;
+    padding: 15px !important;
+    font-size: 11px;
+    height: 100%;
+    overflow-y: auto;    /* Hiện thanh cuộn khi lịch sử quá dài */
+    line-height: 1.6;    /* Khoảng cách dòng cho dễ đọc */
+}
+
+/* Tùy chỉnh dòng thông báo cho chuyên nghiệp */
+.log-entry {
+    border-bottom: 1px solid #333;
+    padding: 5px 0;
+    animation: fadeInLog 0.3s ease-out; /* Hiệu ứng xuất hiện mượt */
+}
+
+@keyframes fadeInLog {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Làm đẹp thanh cuộn */
+.msg-box::-webkit-scrollbar { width: 4px; }
+.msg-box::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+
+.skills-grid {
+    background-color: #334155 !important; 
+    padding: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 10px;
+}
+
+/* Tùy chỉnh nút kỹ năng để giống trong ảnh */
+.btn-pk {
+    font-size: 12px !important;
+    padding: 8px !important;
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-weight: bold;
+    background: #b69595;
+    border: 2px solid #333;
+    box-shadow: 2px 2px 0 #333;
+}
+
+        .btn-pk:hover:not(:disabled) { 
+            background: #e5c5c5; 
+            border-color: #333; 
+            transform: translate(-1px, -1px); 
+            box-shadow: 3px 3px 0 #333; 
+        }
+
+        .btn-dynamax {
+            background: linear-gradient(45deg, #ff0055, #8800ff) !important;
+            color: white !important;
+            border: 2px solid #333 !important;
+            box-shadow: 2px 2px 0 #500 !important;
+        }
+        
+        .btn-dynamax:disabled {
+            background: #9ca3af !important;
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none !important;
+        }
+
+        .btn-ult-disabled { 
+            background: #e5e7eb !important; 
+            border-color: #d1d5db !important; 
+            color: #9ca3af !important; 
+            box-shadow: 1px 1px 0 #9ca3af !important;
+            cursor: not-allowed;
+        }
+
+        .btn-ult-ready { 
+            background: #ffde00 !important; 
+            border-color: #ff8a00 !important; 
+            color: #000 !important; 
+            animation: pulse-gold 1.5s infinite; 
+            box-shadow: 2px 2px 0 #ff8a00 !important;
+            cursor: pointer; 
+        }
+
+
+
+        .switch-btn-card { display: flex; align-items: center; gap: 8px; background: #b00073; border: 2px solid #ccc; border-radius: 8px; padding: 6px 10px; width: 100%; transition: all 0.2s; cursor: pointer; box-shadow: 2px 2px 0 #888; flex-shrink: 0; }
+        .switch-btn-card:hover:not(:disabled) { background: gray; border-color: #333; transform: translateY(-2px); }
+        .switch-btn-card:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; }
+
+.pk-card { 
+    transition: all 0.2s ease-in-out; 
+    color: #333 !important; /* Chữ màu đen xám đậm để nổi bật trên nền sáng */
+    font-weight: bold;
+}
+
+.pk-card span {
+    color: #1a1a1a !important; /* Đảm bảo thẻ span chứa tên luôn rõ ràng */
+    text-shadow: none; /* Xóa bóng đổ nếu có để chữ sắc nét hơn */
+}
+
+.pk-card:hover:not(.selected) { 
+    transform: translateY(-5px) scale(1.05); 
+    background-color: #ffffff; 
+    border-color: #334155; 
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); 
+    z-index: 10; 
+}
+
+.pk-card.selected {
+    background-color: #ffeb3b !important; /* Màu vàng khi được chọn */
+    border-color: #ff9800 !important;
+}
+        @keyframes hit-shake-pkm {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(-8px, 4px); }
+            50% { transform: translate(8px, -4px); }
+        }
+        .hit-effect { animation: hit-shake-pkm 0.2s ease-in-out; }
+        
+        @keyframes pulse-gold { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+
+        .missing-text {
+            position: absolute;
+            color: #ff3e3e;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            text-shadow: 2px 2px 0 #000;
+            z-index: 50;
+            pointer-events: none;
+            animation: float-up 1s ease-out forwards;
+        }
+
+        @keyframes float-up {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-60px); opacity: 0; }
+        }
+
+        .filter-container-wrapper { background: #ffffff; border: 2px solid #e2e8f0; border-radius: 16px; padding: 12px 16px; margin-bottom: 12px; }
+        .filter-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; }
+        .filter-pill { padding: 6px 14px; border-radius: 12px; font-size: 9px; cursor: pointer; white-space: nowrap; color: white; opacity: 0.8; transition: all 0.2s; }
+        .filter-pill.active { opacity: 1; border: 2px solid #000; transform: scale(1.05); }
+
+        .back-btn { background: #ffffff; border: 3px solid #000000; color: #000000; padding: 6px 12px; cursor: pointer; transition: all 0.1s; box-shadow: 3px 3px 0 #000000; display: inline-flex; align-items: center; justify-content: center; }
+        .exit-btn { background: #ef4444; color: white; border: 2px solid black; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 10px; margin-left: 12px; cursor: pointer; box-shadow: 2px 2px 0 black; }
+
+        .mode-selector { display: flex; background: rgb(69, 187, 246); padding: 4px; border-radius: 12px; gap: 4px; margin-bottom: 12px; border: 2px solid #cbd5e1; }
+        .mode-btn { flex: 1; padding: 8px; font-size: 8px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; }
+        /*.mode-btn.active { background: rgb(0, 255, 89); border-color: #333; box-shadow: 0 2px 4px rgba(0,0,0,0.1); color: black; }*/
+#mode-easy.active { background: rgb(34, 197, 94);border-color: #333; box-shadow: 0 2px 4px rgba(0,0,0,0.1); color: black; }
+#mode-med.active { background: rgb(255, 255, 0); border-color: #333; box-shadow: 0 2px 4px rgba(0,0,0,0.1); color: black;}
+#mode-hard.active { background: rgb(255, 0, 0); border-color: #333; box-shadow: 0 2px 4px rgba(0,0,0,0.1); color: black;}
+
+        #shutdown-screen { position: fixed; inset: 0; background: black; z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; font-family: 'Press Start 2P', cursive; }
+        #shutdown-screen .back-btn { margin-top: 12px; }
+        .legendary-card {
+            border: 2px solid #FFD700 !important;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5) !important;
+            position: relative;
+        }
+        .legendary-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: gold;
+            color: black;
+            font-size: 6px;
+            padding: 2px 4px;
+            border-radius: 4px;
+            border: 1px solid black;
+        }
+/* Container chính (Khung xanh) */
+.bg-\[\#e0e7e9\] {
+    display: flex;
+    flex-direction: column;
+    /* Đảm bảo chiều cao khung xanh đủ lớn để nút bám đáy */
+    min-height: 600px; 
+    height: 80vh; 
+}
+
+/* Thẻ Pokedex: Giữ nguyên Grid cũ, CHỈ THÊM cuộn và giới hạn chiều cao */
+#pokedex {
+    display: grid;
+    /* Các class grid-cols cũ của bạn giữ nguyên */
+    overflow-y: auto;
+    padding: 1rem;
+    background-color: #f8fafc; /* bg-slate-50 */
+    border-radius: 1rem;
+    
+    /* KHÔNG dùng flex-grow: 1 ở đây để tránh kéo giãn thẻ */
+    max-height: 500px; /* Chỉnh con số này phù hợp với khung máy game */
+    margin-bottom: 20px;
+}
+
+/* Nút START BATTLE: Kỹ thuật bám đáy chuẩn */
+#start-btn {
+    margin-top: auto; /* Tự động đẩy nút xuống sát đáy của flex container */
+    flex-shrink: 0;   /* Đảm bảo nút không bị bóp méo chiều cao */
+    width: 100%;
+}
+        #start-btn.ready {
+            opacity: 1 !important;
+            cursor: pointer !important;
+            background-color: #dc2626 !important;
+            border-color: #7f1d1d !important;
+            box-shadow: 0 6px 0 #7f1d1d;
+            ;
+        }
+.game-wrapper {
+    width: 95vw;            /* Giãn ra 95% chiều ngang màn hình */
+    max-width: 1400px;      /* Giới hạn tối đa để không bị quá to trên màn hình 4K */
+    margin: 0 auto;
+}
+.game-viewport {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+/* Container thời tiết */
+.weather-layer { position: absolute; inset: 0; pointer-events: none; z-index: 15; overflow: hidden; }
+/* --- CẬP NHẬT MỚI: ELECTRIC (Sét từ phía trên) --- */
+.bolt {
+    position: absolute;
+    width: 3px;
+    z-index: 17;
+    filter: drop-shadow(0 0 12px #fff);
+    animation: bolt-fade 0.2s ease-out forwards;
+}
+.bolt-yellow { background: linear-gradient(to bottom, transparent, #ffff00); box-shadow: 0 0 20px #ffff00; }
+.bolt-blue { background: linear-gradient(to bottom, transparent, #00ffff); box-shadow: 0 0 20px #00ffff; }
+
+@keyframes bolt-fade {
+    0% { transform: scaleY(0); opacity: 1; transform-origin: top; }
+    50% { transform: scaleY(1); opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* Hiệu ứng Psychic - Lóe sáng liên tục từ 4 góc */
+.psychic-corner {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(191, 0, 255, 0.4) 0%, transparent 70%);
+    filter: blur(30px);
+    z-index: 15;
+    pointer-events: none;
+    animation: psychic-corner-flash 1.5s ease-in-out infinite alternate;
+}
+
+.top-left { top: -50px; left: -50px; }
+.top-right { top: -50px; right: -50px; }
+.bottom-left { bottom: -50px; left: -50px; }
+.bottom-right { bottom: -50px; right: -50px; }
+
+@keyframes psychic-corner-flash {
+    0% { transform: scale(1); opacity: 0.3; }
+    100% { transform: scale(1.5); opacity: 0.8; filter: hue-rotate(45deg) blur(50px); }
+}
+
+/* Lớp phủ màu tím nhẹ toàn màn hình để đồng bộ */
+.psychic-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(191, 0, 255, 0.05);
+    z-index: 14;
+    animation: psychic-pulse-bg 3s ease-in-out infinite;
+}
+
+@keyframes psychic-pulse-bg {
+    0%, 100% { opacity: 0.2; }
+    50% { opacity: 0.5; }
+}
+
+/* Mưa rơi (Water Map) - Rơi nhanh, mảnh */
+.rain { 
+    width: 2px; 
+    height: 60px; 
+    background: rgba(255, 255, 255, 0.4); 
+    position: absolute; 
+    top: -100px; /* Bắt đầu từ ngoài map */
+    animation: rain-fall-down 0.8s linear infinite; 
+}
+
+/* Lá rơi (Grass Map) - Rơi chậm, xoay */
+.leaf { 
+    position: absolute; 
+    width: 15px; 
+    height: 15px; 
+    background: #78C850; 
+    border-radius: 2px 10px; 
+    top: -50px; 
+    animation: leaf-fall-down 4s linear infinite; 
+}
+
+/* Tuyết rơi (Ice Map) - Rơi nhẹ, lơ lửng */
+.snow { 
+    position: absolute; 
+    width: 8px; 
+    height: 8px; 
+    background: white; 
+    border-radius: 50%; 
+    filter: blur(1px); 
+    top: -20px;
+    animation: snow-fall-down 5s linear infinite; 
+}
+
+/* Animation Keyframes */
+@keyframes rain-fall-down { 
+    to { transform: translateY(900px) translateX(50px); } 
+}
+
+@keyframes leaf-fall-down { 
+    0% { transform: translate(0, 0) rotate(0deg); opacity: 0; } 
+    10% { opacity: 1; }
+    100% { transform: translate(200px, 800px) rotate(720deg); opacity: 0; } 
+}
+
+@keyframes snow-fall-down { 
+    0% { transform: translate(0, 0); opacity: 0; } 
+    10% { opacity: 1; }
+    100% { transform: translate(40px, 800px); opacity: 0; } 
+}
+
+/* --- ROCK MAP: Bão cát vệt dài chéo --- */
+.sand {
+    position: absolute;
+    width: 120px; 
+    height: 2px;
+    background: linear-gradient(to right, transparent, rgba(210, 180, 140, 0.7), transparent);
+    filter: blur(1px);
+    animation: sand-drift-new 0.7s linear infinite;
+    z-index: 15;
+}
+@keyframes sand-drift-new {
+    0% { transform: translate(-200px, -100px) rotate(10deg); opacity: 0; }
+    50% { opacity: 1; }
+    100% { transform: translate(1200px, 200px) rotate(10deg); opacity: 0; }
+}
+
+/* --- FIRE MAP: Ngọn lửa to bốc lên --- */
+.ember {
+    position: absolute;
+    width: 15px; height: 15px; 
+    border-radius: 50% 0 50% 50%; 
+    filter: blur(2px);
+    transform: rotate(-45deg);
+    animation: fire-rise-new 1.2s ease-out infinite;
+    z-index: 15;
+}
+@keyframes fire-rise-new {
+    0% { transform: translateY(400px) rotate(-45deg) scale(0.5); opacity: 0; background: #ff4500; }
+    30% { opacity: 1; background: #ff8c00; }
+    60% { background: #ffde00; box-shadow: 0 0 20px #ffde00; }
+    100% { transform: translateY(-50px) rotate(-45deg) scale(2); opacity: 0; background: #ffffff; }
+}
