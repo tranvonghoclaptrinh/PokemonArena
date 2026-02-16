@@ -941,28 +941,34 @@ async function enemyTurn() {
 
 async function checkDeath() {
     const e = eTeam[eIdx], p = pTeam[pIdx];
+    
     if(e && e.currentHp <= 0) {
         addLog(`${e.name} fainted!`);
         eIdx++; 
         if(eIdx >= eTeam.length) return endGame(true);
         
-        // Xóa ảnh địch cũ
         document.getElementById('e-sprite').src = ""; 
+        // Reset thanh máu địch về 100% (của con mới) ngay lập tức để tránh nhìn thấy thanh cũ cạn kiệt
+        document.getElementById('e-hp-fill').style.width = '100%'; 
         
         await new Promise(r => setTimeout(r, 1000));
         await spawnSequence('enemy');
+        updateUI(); // Cập nhật lại UI sau khi spawn con mới
     }
+
     if(p && p.currentHp <= 0) {
         addLog(`${p.name} fainted!`);
         const nxt = pTeam.findIndex(x => x.currentHp > 0);
         if(nxt === -1) return endGame(false);
         
-        // Xóa ảnh người chơi cũ
         document.getElementById('p-sprite').src = ""; 
+        // Reset thanh máu ta
+        document.getElementById('p-hp-fill').style.width = '100%';
         
         pIdx = nxt; 
         await new Promise(r => setTimeout(r, 1000));
         await spawnSequence('player');
+        updateUI(); // Cập nhật lại UI sau khi spawn con mới
     }
 }
 
@@ -999,21 +1005,28 @@ function updateUI() {
         `<span class="type-badge-inline ml-1" style="background:${TYPE_COLORS[t]}">${t}</span>`
     ).join('');
     
-    // 2. CẬP NHẬT MÁU VÀ MÀU SẮC THANH MÁU
+// 2. CẬP NHẬT MÁU
     const pHPPercent = (p.currentHp / p.hp * 100);
     const eHPPercent = (e.currentHp / e.hp * 100);
     
     const pHPFill = document.getElementById('p-hp-fill');
     const eHPFill = document.getElementById('e-hp-fill');
 
+    // Mẹo: Nếu Pokemon vừa thay đổi (opacity sprite = 0), reset thanh máu ngay lập tức
+    if (document.getElementById('p-sprite').style.opacity === "0") {
+        pHPFill.style.transition = 'none';
+    } else {
+        pHPFill.style.transition = 'width 0.3s ease-in-out';
+    }
+
     pHPFill.style.width = pHPPercent + '%';
     eHPFill.style.width = eHPPercent + '%';
 
-    // Đổi màu thanh máu: Xanh (>50%) -> Vàng (>20%) -> Đỏ
+    // Đổi màu thanh máu
     pHPFill.style.backgroundColor = pHPPercent > 50 ? "#4ade80" : (pHPPercent > 20 ? "#facc15" : "#ef4444");
     eHPFill.style.backgroundColor = eHPPercent > 50 ? "#4ade80" : (eHPPercent > 20 ? "#facc15" : "#ef4444");
 
-    document.getElementById('p-hp-text').innerText = `${p.currentHp}/${p.hp}`;
+    document.getElementById('p-hp-text').innerText = `${Math.ceil(p.currentHp)}/${p.hp}`;
     
     // 3. CẬP NHẬT NỘ
     document.getElementById('p-fury-fill').style.width = Math.min(100, p.fury)+'%';
