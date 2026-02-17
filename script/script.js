@@ -574,71 +574,73 @@ async function announceSkill(name, color, pkmId) {
     scene.style.filter = 'none';
 }
 
-async function attackAnim(attackerId, multiplier = 1, isDynamax = false, damageAmount = 0) {
+async function attackAnim(attackerId, multiplier = 1, isUltimate = false, damageAmount = 0, isDynamax = false) {
     const atk = document.getElementById(attackerId);
     const isPlayer = attackerId === 'p-sprite';
-    const defId = isPlayer ? 'e-sprite' : 'p-sprite';
-    const def = document.getElementById(defId);
+    const def = document.getElementById(isPlayer ? 'e-sprite' : 'p-sprite');
     
     const moveX = isPlayer ? 100 : -100;
     const moveY = isPlayer ? -40 : 40;
-    
     const isCrit = multiplier >= 2;
-    const isMissing = multiplier === 0; // Xác định trạng thái hụt đòn
+    const isMissing = multiplier === 0;
 
-    // 1. CHUẨN BỊ TRƯỚC TẤN CÔNG
+    // Chỉ Dynamax mới phóng to 2.2 lần
+    const targetScale = isDynamax ? 2.2 : 1; 
+    const translateY = isDynamax ? -15 : 0;
+
+    // --- BƯỚC 1: CHUẨN BỊ (GỒNG & PHÓNG TO) ---
     if (isDynamax) {
-        playSfx('dynamax');
+        playSfx('dynamax'); 
         atk.classList.add('dynamax-active'); 
+        
+        // Phóng to chậm (0.8s) với hiệu ứng đàn hồi (cubic-bezier)
         atk.style.transition = 'transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-        atk.style.transform = 'scale(2.2) translateY(-15px)';
+        atk.style.transform = `scale(${targetScale}) translateY(${translateY}px)`;
+        
         shakeScreen('heavy');
+        // Chờ gồng xong (tổng 1s để tạo độ khựng kịch tính)
         await new Promise(r => setTimeout(r, 1000));
     } 
-    else if (isCrit) {
-        // CHÍ MẠNG: Hiện vòng sáng, KHÔNG PHÓNG TO
-        atk.classList.add('crit-aura');
+    else if (isUltimate) {
         await new Promise(r => setTimeout(r, 400));
     }
 
-    // 2. LAO VÀO TẤN CÔNG
+    // --- BƯỚC 2: LAO VÀO TẤN CÔNG (NHANH) ---
     atk.style.transition = 'transform 0.15s ease-in';
-    const currentScale = isDynamax ? 'scale(2.2)' : 'scale(1)';
-    atk.style.transform = `translate(${moveX}px, ${moveY}px) ${currentScale}`;
+    atk.style.transform = `translate(${moveX}px, ${moveY}px) scale(${targetScale})`;
     
-    // 3. THỜI ĐIỂM VA CHẠM (Impact)
+    // --- BƯỚC 3: VA CHẠM (IMPACT) ---
     setTimeout(() => {
-        // --- FIX QUAN TRỌNG: CHỈ HIỆN DAME NẾU KHÔNG PHẢI MISSING ---
-        if (!isMissing && damageAmount > 0) {
-            showFloatingDamage(def, damageAmount, isCrit);
-        }
-
+        const targetData = isPlayer ? eTeam[eIdx] : pTeam[pIdx];
         if (isMissing) {
             playSfx('missing');
-            // Không thực hiện các hiệu ứng rung/lóe sáng khi hụt
-        } else if (isCrit) {
-            playSfx('ultimate'); 
-            shakeScreen('heavy');
-            def.classList.add('hit-effect');
         } else {
-            playSfx('hit');
-            shakeScreen('normal');
+            if (damageAmount > 0) {
+                showFloatingDamage(def, damageAmount, isCrit || isUltimate || isDynamax);
+                showElementalAura(def, targetData, 'hit'); 
+            }
+            
+            // Âm thanh nổ mạnh khi Dynamax hoặc Ultimate trúng đích
+            if (isDynamax || isUltimate || isCrit) {
+                playSfx('ultimate'); 
+                shakeScreen('heavy');
+            } else {
+                playSfx('hit');
+                shakeScreen('normal');
+            }
             def.classList.add('hit-effect');
         }
-
-        // Dọn dẹp hiệu ứng hit
         setTimeout(() => def.classList.remove('hit-effect'), 250);
     }, 100);
 
-    // 4. THU HỒI
+    // --- BƯỚC 4: THU HỒI ---
     await new Promise(r => setTimeout(r, 350));
-    atk.style.transition = 'transform 0.3s ease-in';
-    atk.style.transform = isDynamax ? 'scale(2.2) translateY(-15px)' : 'translate(0,0)';
+    atk.style.transition = 'transform 0.3s ease-out';
+    atk.style.transform = `translate(0,0) scale(${targetScale}) translateY(${translateY}px)`;
     
-    atk.classList.remove('crit-aura');
     await new Promise(r => setTimeout(r, 500));
 
-    // 5. KẾT THÚC DYNAMAX
+    // --- BƯỚC 5: KẾT THÚC DYNAMAX (NHỎ LẠI) ---
     if (isDynamax) {
         atk.style.transition = 'transform 0.5s ease-out';
         atk.style.transform = 'scale(1) translate(0,0)';
@@ -759,86 +761,127 @@ async function doAction(idx) {
 
     const p = pTeam[pIdx];
     const e = eTeam[eIdx];
+    
+    // Giả sử sIdx = 3 là kỹ năng Dynamax (Skill thứ 4)
+    const isDynamaxAction = (idx === 3);
     const s = p.skills[idx];
 
-    // --- 1. RESET NỘ NGAY LẬP TỨC KHI DÙNG ULTIMATE ---
-    if (s.isU) {
-        p.fury = 0; 
-        updateUI(); // Cập nhật ngay thanh nộ biến mất trên giao diện
-    }
-
-    // --- 2. TÍNH TOÁN SÁT THƯƠNG (Damage) & MULTIPLIER ---
-    let finalDamage = s.d;
-    let multiplier = 1.0;
-
-    // Buff/Debuff môi trường
-    if (p.type === currentMap.type) {
-        multiplier = 1.3;
-        addLog(`[ENV] ${p.name} is empowered by the environment!`);
-    } 
-
-    const envDebuffs = { 'FIRE': 'WATER', 'WATER': 'ELECTRIC', 'GRASS': 'FIRE', 'ICE': 'FIRE' };
-    if (envDebuffs[p.type] === currentMap.type) {
-        multiplier = 0.7;
-        addLog(`[ENV] ${p.name}'s power is dampened by the environment!`);
-    }
-
-    // Áp dụng multiplier vào sát thương thực tế
-    finalDamage = Math.floor(finalDamage * multiplier);
-
-    // Tỉ lệ hụt (Accuracy)
-    let missChance = 0.1; 
-    if (e.type === currentMap.type) missChance += 0.1; 
-    
-    // --- 3. THÔNG BÁO & CHIẾU ANIMATION ---
-    if (s.isU && p.isLegendary) {
-        await announceSkill(s.n, TYPE_COLORS[p.type], p.id);
-    }
-    
-    addLog(`${p.name} used ${s.n}!`);
-
-    // GỌI ANIMATION: Truyền thêm finalDamage để hiện số sát thương
-    // multiplier >= 1.3 được coi là Critical (số đỏ) trong logic này
-    await attackAnim('p-sprite', multiplier, s.isU, finalDamage);
-
-    // --- 4. XỬ LÝ KẾT QUẢ TRÚNG/TRƯỢT ---
-    if (Math.random() < missChance) {
-        addLog(`The attack missed!`);
-        showMiss(true);
-        // Lưu ý: Nếu trượt, nộ Ultimate vẫn mất (đã reset ở bước 1)
-    } else {
-        // Trúng đòn
-        e.currentHp = Math.max(0, e.currentHp - finalDamage);
+    // --- 1. XỬ LÝ DYNAMAX RIÊNG BIỆT ---
+    if (isDynamaxAction) {
+        if (p.hasUsedDynamax) {
+            addLog(`${p.name} already used Dynamax!`);
+            busy = false;
+            return;
+        }
         
-        // Cộng nộ cho đòn thường, Ultimate không được cộng nộ
-        if (!s.isU) {
-            p.fury = Math.min(100, p.fury + 30);
+        p.hasUsedDynamax = true; 
+        addLog(`${p.name} activates DYNAMAX!!`);
+        updateUI();
+
+        // Gọi attackAnim với isDynamax = true
+        // Nó sẽ tự động: Chậm lại (0.8s) -> Phóng to -> Khựng 1s -> Đánh
+        await attackAnim('p-sprite', 1, false, 160, true); 
+        
+        e.currentHp = Math.max(0, e.currentHp - 160);
+        p.fury = Math.min(100, p.fury + 50);
+    } 
+    else {
+        // --- 2. LOGIC TẤN CÔNG THƯỜNG / ULTIMATE ---
+        if (s.isU) {
+            p.fury = 0; 
+            updateUI(); 
+            const attackerEl = document.getElementById('p-sprite');
+            showElementalAura(attackerEl, p, 'ultimate');
+
+            if (p.isLegendary) {
+                await announceSkill(s.n, TYPE_COLORS[p.type] || '#fff', p.id);
+            }
+        }
+
+        let finalDamage = s.d;
+        let multiplier = 1.0;
+
+        // Tính môi trường
+        if (p.type === currentMap.type) multiplier = 1.3;
+        const envDebuffs = { 'FIRE': 'WATER', 'WATER': 'ELECTRIC', 'GRASS': 'FIRE', 'ICE': 'FIRE' };
+        if (envDebuffs[p.type] === currentMap.type) multiplier = 0.7;
+
+        finalDamage = Math.floor(finalDamage * multiplier);
+
+        // Trượt đòn
+        let missChance = 0.1; 
+        if (e.type === currentMap.type) missChance += 0.1; 
+        const isMissing = Math.random() < missChance;
+
+        addLog(`${p.name} used ${s.n}!`);
+
+        // Gọi animation thường (isDynamax = false)
+        await attackAnim('p-sprite', isMissing ? 0 : multiplier, s.isU, finalDamage, false);
+
+        if (isMissing) {
+            addLog(`The attack missed!`);
+        } else {
+            e.currentHp = Math.max(0, e.currentHp - finalDamage);
+            if (!s.isU) p.fury = Math.min(100, p.fury + 30);
         }
     }
 
-    // --- 5. CẬP NHẬT TRẠNG THÁI CUỐI LƯỢT ---
-    updateUI(); // Cập nhật máu đối thủ và nộ người chơi
+    // --- 3. KẾT THÚC LƯỢT ---
+    updateUI();
     await checkDeath();
     
     if (eIdx < eTeam.length && eTeam[eIdx].currentHp > 0) {
         setTimeout(enemyTurn, 1000); 
     } else {
         busy = false; 
-        updateUI();
     }
 }
+function showElementalAura(targetEl, pokemon, type = 'hit') {
+    const aura = document.createElement('div');
+    aura.className = `elemental-aura ${type === 'ultimate' ? 'aura-ultimate' : 'aura-hit'}`;
+    
+    // Lấy màu hệ đầu tiên của Pokemon để làm màu vòng sáng
+    const mainType = pokemon.types[0];
+    const color = TYPE_COLORS[mainType] || '#ffffff';
+    
+    // Gán màu vào biến CSS
+    aura.style.setProperty('--aura-color', color);
+    
+    // Thêm vào cùng cha với Pokemon (platform)
+    targetEl.parentElement.appendChild(aura);
+    
+    // Tự xóa sau khi diễn xong
+    setTimeout(() => aura.remove(), 1000);
+}
 async function useDynamax() {
-    if(busy || pDynamaxUsedInGame) return;
+    // 1. Kiểm tra trạng thái
+    if (busy || pTeam[pIdx].hasUsedDynamax) return;
     busy = true; 
-    pDynamaxUsedInGame = true;
-    const p = pTeam[pIdx], e = eTeam[eIdx];
-    addLog(`${p.name} DYNAMAX!!`);
-    await attackAnim('p-sprite', 'e-sprite', true);
+
+    const p = pTeam[pIdx];
+    const e = eTeam[eIdx];
+
+    // 2. Đánh dấu đã sử dụng
+    p.hasUsedDynamax = true; 
+    addLog(`${p.name} activates DYNAMAX!!`);
+    updateUI();
+
+    // 3. GỌI ANIMATION (Quan trọng: số true cuối cùng kích hoạt audio và phóng to)
+    // Tham số: (attackerId, multiplier, isUltimate, damageAmount, isDynamax)
+    await attackAnim('p-sprite', 1, false, 160, true); 
+
+    // 4. Tính sát thương và hồi nộ
     e.currentHp = Math.max(0, e.currentHp - 160);
     p.fury = Math.min(100, p.fury + 50);
+
+    // 5. Kết thúc lượt
     await checkDeath();
     updateUI(); 
-    setTimeout(enemyTurn, 800);
+    if (e.currentHp > 0) {
+        setTimeout(enemyTurn, 1000);
+    } else {
+        busy = false;
+    }
 }
 // Hàm kiểm tra eType có khắc chế pType không
 function checkTypeAdvantage(attackerType, defenderType) {
@@ -856,87 +899,54 @@ function checkTypeAdvantage(attackerType, defenderType) {
 }
 async function enemyTurn() {
     if (eIdx >= eTeam.length || eTeam[eIdx].currentHp <= 0) {
-        busy = false; 
-        return;
+        busy = false; return;
     }
     
     const p = pTeam[pIdx];
     const e = eTeam[eIdx];
+    const enemyEl = document.getElementById('e-sprite');
     const isLastPkmn = (eIdx === eTeam.length - 1);
     
-    // --- SMART AI DYNAMAX ---
-    let shouldDynamax = false;
-    if (isLastPkmn || checkTypeAdvantage(e.type, p.type) || p.currentHp <= 160) {
-        shouldDynamax = true;
-    }
+    let shouldDynamax = !e.hasUsedDynamax && (isLastPkmn || checkTypeAdvantage(e.type, p.type));
 
-    if (shouldDynamax && !e.hasUsedDynamax) {
+    if (shouldDynamax) {
         e.hasUsedDynamax = true; 
         addLog(`Enemy ${e.name} activates DYNAMAX!!`);
-        // Dynamax gây sát thương chuẩn 160
-        await attackAnim('e-sprite', 1, true, 160); 
+        updateUI();
+
+        // GỌI DYNAMAX: isUltimate=false, isDynamax=true
+        await attackAnim('e-sprite', 1, false, 160, true); 
+        
         p.currentHp = Math.max(0, p.currentHp - 160);
         e.fury = Math.min(100, e.fury + 50);
     } 
     else {
-        // Lựa chọn chiêu thức: Ưu tiên chiêu 2 (Ulti) nếu đầy nộ
         const sIdx = (e.fury >= 100) ? 2 : (Math.random() > 0.4 ? 1 : 0);
         const s = e.skills[sIdx];
         
-        // --- QUAN TRỌNG: RESET NỘ KHI DÙNG ULTIMATE (Bất kể trúng/trượt) ---
         if (s.isU) {
             e.fury = 0;
-            updateUI(); // Cập nhật để người chơi thấy thanh nộ máy biến mất ngay
+            updateUI(); 
+            showElementalAura(enemyEl, e, 'ultimate'); 
+            if (e.isLegendary) await announceSkill(s.n, TYPE_COLORS[e.type] || '#fff', e.id);
         }
-
-        if (s.isU && e.isLegendary) await announceSkill(s.n, TYPE_COLORS[e.type], e.id);
         
         addLog(`Enemy ${e.name} used ${s.n}!`);
-        
-        // --- FIELD CALCULATIONS ---
-        let baseD = s.d;
-        let multiplier = 1.0;
+        let finalDamage = Math.floor(s.d * (e.type === currentMap.type ? 1.3 : 1.0));
+        const isMissing = Math.random() < 0.1;
 
-        // Buff môi trường (30%)
-        if (e.type === currentMap.type) {
-            multiplier *= 1.3;
-            addLog(`[ENV] Enemy is empowered by the environment!`);
-        }
-
-        // Tính sát thương cuối cùng trước khi chạy animation
-        let finalDamage = Math.floor(baseD * multiplier);
-
-        // Animation tấn công: Truyền thêm finalDamage để hiện chữ sát thương đỏ/trắng
-        await attackAnim('e-sprite', multiplier, s.isU, finalDamage);
+        // GỌI THƯỜNG/ULTI: isDynamax luôn = false
+        await attackAnim('e-sprite', isMissing ? 0 : 1, s.isU, finalDamage, false);
         
-        // Accuracy Logic
-        let missChance = 0.1;
-        if (p.type === currentMap.type) missChance += 0.1;
-        
-        if (Math.random() < missChance) { 
-            addLog(`Enemy attack missed!`); 
-            showMiss(false);
-            // Nộ đã reset ở trên nếu là Ultimate
-        } else {
-            // Trừ máu thực tế
+        if (!isMissing) {
             p.currentHp = Math.max(0, p.currentHp - finalDamage);
-            
-            // Chỉ cộng nộ cho đòn thường khi trúng đích
-            if (!s.isU) {
-                e.fury = Math.min(100, e.fury + 30);
-            }
+            if (!s.isU) e.fury = Math.min(100, e.fury + 30);
         }
     }
 
     await checkDeath();
-    updateUI(); // Tự động cập nhật màu HP Bar (Xanh -> Vàng -> Đỏ)
-    
-    // Mở khóa lượt cho người chơi
-    setTimeout(() => {
-        busy = false;
-        pTurn = true; 
-        updateUI();
-    }, 500);
+    updateUI(); 
+    setTimeout(() => { busy = false; pTurn = true; updateUI(); }, 500);
 }
 
 async function checkDeath() {
