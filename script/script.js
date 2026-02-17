@@ -239,45 +239,117 @@ const REGIONS = [
     { name: "SINNOH", start: 387, end: 493 }
 ];
 
-// 4. Tạo mảng DATA cuối cùng
 const DATA = Object.keys(POKEMON_DB).map(id => {
     const p = POKEMON_DB[id];
     const idInt = parseInt(id);
+    
+    // Tạo object để hàm generateSkills xử lý
+    const tempPkmn = {
+        types: p.types, // Đây phải là mảng ["FIRE", "FLYING"]...
+        isLegendary: p.isLeg,
+        ult: p.ult
+    };
+
     return { 
         id: idInt, 
         name: p.name, 
-        types: p.types, // Lưu mảng các hệ
+        types: p.types, 
         isLegendary: p.isLeg,
-        hp: p.isLeg ? 500 : 200 + (idInt % 50), 
-        skills: [
-            {n: "Tackle", d: 40}, 
-            {n: p.isLeg ? "Hyper Beam" : "Bite", d: p.isLeg ? 90 : 55}, 
-            {n: p.isLeg ? p.ult : "GIGA IMPACT", d: p.isLeg ? p.power : 140, isU: true}
-        ] 
+        hp: p.isLeg ? 600 : 250 + (idInt % 100),
+        skills: generateSkills(tempPkmn) 
     };
 });
 // Bảng tương khắc hệ chuẩn
 const TYPE_CHART = {
-    "FIRE": { superEff: ["GRASS", "ICE", "BUG", "STEEL"], notEff: ["FIRE", "WATER", "ROCK", "DRAGON"] },
-    "WATER": { superEff: ["FIRE", "GROUND", "ROCK"], notEff: ["WATER", "GRASS", "DRAGON"] },
-    "GRASS": { superEff: ["WATER", "GROUND", "ROCK"], notEff: ["FIRE", "GRASS", "POISON", "FLYING", "BUG", "DRAGON", "STEEL"] },
+    "FIRE": { superEff: ["GRASS", "ICE", "BUG", "STEEL"], notEff: ["FIRE", "WATER", "ROCK", "DRAGON"], noEff: [] },
+    "WATER": { superEff: ["FIRE", "GROUND", "ROCK"], notEff: ["WATER", "GRASS", "DRAGON"], noEff: [] },
+    "GRASS": { superEff: ["WATER", "GROUND", "ROCK"], notEff: ["FIRE", "GRASS", "POISON", "FLYING", "BUG", "DRAGON", "STEEL"], noEff: [] },
     "ELECTRIC": { superEff: ["WATER", "FLYING"], notEff: ["ELECTRIC", "GRASS", "DRAGON"], noEff: ["GROUND"] },
-    "ICE": { superEff: ["GRASS", "GROUND", "FLYING", "DRAGON"], notEff: ["FIRE", "WATER", "ICE", "STEEL"] },
+    "ICE": { superEff: ["GRASS", "GROUND", "FLYING", "DRAGON"], notEff: ["FIRE", "WATER", "ICE", "STEEL"], noEff: [] },
     "FIGHTING": { superEff: ["NORMAL", "ICE", "ROCK", "DARK", "STEEL"], notEff: ["POISON", "FLYING", "PSYCHIC", "BUG", "FAIRY"], noEff: ["GHOST"] },
     "POISON": { superEff: ["GRASS", "FAIRY"], notEff: ["POISON", "GROUND", "ROCK", "GHOST"], noEff: ["STEEL"] },
     "GROUND": { superEff: ["FIRE", "ELECTRIC", "POISON", "ROCK", "STEEL"], notEff: ["GRASS", "BUG"], noEff: ["FLYING"] },
-    "FLYING": { superEff: ["GRASS", "FIGHTING", "BUG"], notEff: ["ELECTRIC", "ROCK", "STEEL"] },
+    "FLYING": { superEff: ["GRASS", "FIGHTING", "BUG"], notEff: ["ELECTRIC", "ROCK", "STEEL"], noEff: [] },
     "PSYCHIC": { superEff: ["FIGHTING", "POISON"], notEff: ["PSYCHIC", "STEEL"], noEff: ["DARK"] },
-    "BUG": { superEff: ["GRASS", "PSYCHIC", "DARK"], notEff: ["FIRE", "FIGHTING", "POISON", "FLYING", "GHOST", "STEEL", "FAIRY"] },
-    "ROCK": { superEff: ["FIRE", "ICE", "FLYING", "BUG"], notEff: ["FIGHTING", "GROUND", "STEEL"] },
+    "BUG": { superEff: ["GRASS", "PSYCHIC", "DARK"], notEff: ["FIRE", "FIGHTING", "POISON", "FLYING", "GHOST", "STEEL", "FAIRY"], noEff: [] },
+    "ROCK": { superEff: ["FIRE", "ICE", "FLYING", "BUG"], notEff: ["FIGHTING", "GROUND", "STEEL"], noEff: [] },
     "GHOST": { superEff: ["PSYCHIC", "GHOST"], notEff: ["DARK"], noEff: ["NORMAL"] },
     "DRAGON": { superEff: ["DRAGON"], notEff: ["STEEL"], noEff: ["FAIRY"] },
-    "DARK": { superEff: ["PSYCHIC", "GHOST"], notEff: ["FIGHTING", "DARK", "FAIRY"] },
-    "STEEL": { superEff: ["ICE", "ROCK", "FAIRY"], notEff: ["FIRE", "WATER", "ELECTRIC", "STEEL"] },
-    "FAIRY": { superEff: ["FIGHTING", "DRAGON", "DARK"], notEff: ["FIRE", "POISON", "STEEL"] },
+    "DARK": { superEff: ["PSYCHIC", "GHOST"], notEff: ["FIGHTING", "DARK", "FAIRY"], noEff: [] },
+    "STEEL": { superEff: ["ICE", "ROCK", "FAIRY"], notEff: ["FIRE", "WATER", "ELECTRIC", "STEEL"], noEff: [] },
+    "FAIRY": { superEff: ["FIGHTING", "DRAGON", "DARK"], notEff: ["FIRE", "POISON", "STEEL"], noEff: [] },
     "NORMAL": { superEff: [], notEff: ["ROCK", "STEEL"], noEff: ["GHOST"] }
 };
 
+// 1. Định nghĩa hàm generateSkills trước
+function getEffectiveness(moveType, targetTypes) {
+    if (!moveType || moveType === "NORMAL_BASIC") return 1;
+    let multiplier = 1;
+    const chart = TYPE_CHART[moveType.toUpperCase()];
+    if (!chart) return 1;
+
+    targetTypes.forEach(t => {
+        const typeUpper = t.toUpperCase();
+        if (chart.superEff.includes(typeUpper)) multiplier *= 2;
+        if (chart.notEff.includes(typeUpper)) multiplier *= 0.5;
+        if (chart.noEff && chart.noEff.includes(typeUpper)) multiplier *= 0;
+    });
+    return multiplier;
+}
+
+function generateSkills(pkmn) {
+    const t1 = pkmn.types[0].toUpperCase();
+    const t2 = pkmn.types[1] ? pkmn.types[1].toUpperCase() : null;
+    
+    const moveDB = {
+        'FIRE': { n: 'Flamethrower', u: 'Blast Burn', d: 60 },
+        'WATER': { n: 'Hydro Pump', u: 'Hydro Cannon', d: 60 },
+        'GRASS': { n: 'Solar Beam', u: 'Frenzy Plant', d: 60 },
+        'ELECTRIC': { n: 'Thunderbolt', u: 'Volt Tackle', d: 60 },
+        'ICE': { n: 'Ice Beam', u: 'Blizzard', d: 60 },
+        'FIGHTING': { n: 'Aura Sphere', u: 'Close Combat', d: 65 },
+        'POISON': { n: 'Sludge Bomb', u: 'Gunk Shot', d: 60 },
+        'GROUND': { n: 'Earthquake', u: 'Fissure', d: 65 },
+        'FLYING': { n: 'Air Slash', u: 'Sky Attack', d: 60 },
+        'PSYCHIC': { n: 'Psychic', u: 'Psycho Boost', d: 60 },
+        'BUG': { n: 'Bug Buzz', u: 'Megahorn', d: 60 },
+        'ROCK': { n: 'Rock Slide', u: 'Head Smash', d: 60 },
+        'GHOST': { n: 'Shadow Ball', u: 'Shadow Force', d: 60 },
+        'DRAGON': { n: 'Dragon Pulse', u: 'Roar of Time', d: 65 },
+        'DARK': { n: 'Dark Pulse', u: 'Night Daze', d: 60 },
+        'STEEL': { n: 'Flash Cannon', u: 'Meteor Mash', d: 60 },
+        'FAIRY': { n: 'Moonblast', u: 'Light of Ruin', d: 65 },
+        'NORMAL': { n: 'Swift', u: 'Giga Impact', d: 50 }
+    };
+
+    // --- Chiêu 1: Hệ thứ 2 (nếu có), không thì là Tackle ---
+    let m1 = { n: "Tackle", d: 40, isU: false, type: "NORMAL_BASIC" };
+    if (t2 && moveDB[t2]) {
+        m1 = { n: moveDB[t2].n, d: moveDB[t2].d, isU: false, type: t2 };
+    }
+
+    // --- Chiêu 2: Luôn mang hệ thứ nhất (t1) ---
+    const mInfo1 = moveDB[t1] || moveDB['NORMAL'];
+    const m2 = { n: mInfo1.n, d: mInfo1.d, isU: false, type: t1 };
+
+    // --- Chiêu 3: Ultimate ---
+    // LOGIC MỚI: Nếu 2 hệ mà hệ 1 là NORMAL, lấy hệ 2 làm Ultimate
+    let ultType = t1;
+    if (t2 && t1 === 'NORMAL') {
+        ultType = t2;
+    }
+
+    const mInfoUlt = moveDB[ultType] || moveDB['NORMAL'];
+    
+    const m3 = { 
+        n: pkmn.isLegendary ? (pkmn.ult || mInfoUlt.u) : mInfoUlt.u, 
+        d: pkmn.isLegendary ? 140 : 110, 
+        isU: true,
+        type: ultType // Hệ của Ultimate dùng để tính khắc chế
+    };
+
+    return [m1, m2, m3];
+}
 // Hàm tính multiplier cho Song hệ
 function getDamageMultiplier(atkType, targetTypes) {
     let mul = 1.0;
@@ -575,78 +647,77 @@ async function announceSkill(name, color, pkmId) {
 }
 
 async function attackAnim(attackerId, multiplier = 1, isUltimate = false, damageAmount = 0, isDynamax = false) {
-    const atk = document.getElementById(attackerId);
-    const isPlayer = attackerId === 'p-sprite';
-    const def = document.getElementById(isPlayer ? 'e-sprite' : 'p-sprite');
-    
-    const moveX = isPlayer ? 100 : -100;
-    const moveY = isPlayer ? -40 : 40;
-    const isCrit = multiplier >= 2;
-    const isMissing = multiplier === 0;
-
-    // Chỉ Dynamax mới phóng to 2.2 lần
-    const targetScale = isDynamax ? 2.2 : 1; 
-    const translateY = isDynamax ? -15 : 0;
-
-    // --- BƯỚC 1: CHUẨN BỊ (GỒNG & PHÓNG TO) ---
-    if (isDynamax) {
-        playSfx('dynamax'); 
-        atk.classList.add('dynamax-active'); 
+    return new Promise(async (resolve) => { // Thêm Promise để không bị khựng lượt
+        const atk = document.getElementById(attackerId);
+        const isPlayer = attackerId === 'p-sprite';
+        const def = document.getElementById(isPlayer ? 'e-sprite' : 'p-sprite');
         
-        // Phóng to chậm (0.8s) với hiệu ứng đàn hồi (cubic-bezier)
-        atk.style.transition = 'transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-        atk.style.transform = `scale(${targetScale}) translateY(${translateY}px)`;
-        
-        shakeScreen('heavy');
-        // Chờ gồng xong (tổng 1s để tạo độ khựng kịch tính)
-        await new Promise(r => setTimeout(r, 1000));
-    } 
-    else if (isUltimate) {
-        await new Promise(r => setTimeout(r, 400));
-    }
+        const moveX = isPlayer ? 100 : -100;
+        const moveY = isPlayer ? -40 : 40;
+        const isCrit = multiplier >= 2;
+        const isMissing = multiplier === 0;
 
-    // --- BƯỚC 2: LAO VÀO TẤN CÔNG (NHANH) ---
-    atk.style.transition = 'transform 0.15s ease-in';
-    atk.style.transform = `translate(${moveX}px, ${moveY}px) scale(${targetScale})`;
-    
-    // --- BƯỚC 3: VA CHẠM (IMPACT) ---
-    setTimeout(() => {
-        const targetData = isPlayer ? eTeam[eIdx] : pTeam[pIdx];
-        if (isMissing) {
-            playSfx('missing');
-        } else {
-            if (damageAmount > 0) {
-                showFloatingDamage(def, damageAmount, isCrit || isUltimate || isDynamax);
-                showElementalAura(def, targetData, 'hit'); 
-            }
-            
-            // Âm thanh nổ mạnh khi Dynamax hoặc Ultimate trúng đích
-            if (isDynamax || isUltimate || isCrit) {
-                playSfx('ultimate'); 
-                shakeScreen('heavy');
-            } else {
-                playSfx('hit');
-                shakeScreen('normal');
-            }
-            def.classList.add('hit-effect');
+        const targetScale = isDynamax ? 2.2 : 1; 
+        const translateY = isDynamax ? -15 : 0;
+
+        // --- BƯỚC 1: CHUẨN BỊ ---
+        if (isDynamax) {
+            playSfx('dynamax'); 
+            atk.classList.add('dynamax-active'); 
+            atk.style.transition = 'transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            atk.style.transform = `scale(${targetScale}) translateY(${translateY}px)`;
+            shakeScreen('heavy');
+            await new Promise(r => setTimeout(r, 1000));
+        } else if (isUltimate) {
+            await new Promise(r => setTimeout(r, 400));
         }
-        setTimeout(() => def.classList.remove('hit-effect'), 250);
-    }, 100);
 
-    // --- BƯỚC 4: THU HỒI ---
-    await new Promise(r => setTimeout(r, 350));
-    atk.style.transition = 'transform 0.3s ease-out';
-    atk.style.transform = `translate(0,0) scale(${targetScale}) translateY(${translateY}px)`;
-    
-    await new Promise(r => setTimeout(r, 500));
+        // --- BƯỚC 2: LAO VÀO ---
+        atk.style.transition = 'transform 0.15s ease-in';
+        atk.style.transform = `translate(${moveX}px, ${moveY}px) scale(${targetScale})`;
+        
+        // --- BƯỚC 3: VA CHẠM ---
+        setTimeout(() => {
+            const targetData = isPlayer ? eTeam[eIdx] : pTeam[pIdx];
+            if (isMissing) {
+                playSfx('missing');
+                // HIỆN CHỮ MISSING Ở ĐÂY
+                showFloatingDamage(def, "MISSING!", false, true); 
+            } else {
+                if (damageAmount > 0) {
+                    showFloatingDamage(def, damageAmount, isCrit || isUltimate || isDynamax);
+                    showElementalAura(def, targetData, 'hit'); 
+                }
+                
+                if (isDynamax || isUltimate || isCrit) {
+                    playSfx('ultimate'); 
+                    shakeScreen('heavy');
+                } else {
+                    playSfx('hit');
+                    shakeScreen('normal');
+                }
+                def.classList.add('hit-effect');
+            }
+            setTimeout(() => def.classList.remove('hit-effect'), 250);
+        }, 100);
 
-    // --- BƯỚC 5: KẾT THÚC DYNAMAX (NHỎ LẠI) ---
-    if (isDynamax) {
-        atk.style.transition = 'transform 0.5s ease-out';
-        atk.style.transform = 'scale(1) translate(0,0)';
-        atk.classList.remove('dynamax-active');
+        // --- BƯỚC 4: THU HỒI ---
+        await new Promise(r => setTimeout(r, 350));
+        atk.style.transition = 'transform 0.3s ease-out';
+        atk.style.transform = `translate(0,0) scale(${targetScale}) translateY(${translateY}px)`;
+        
         await new Promise(r => setTimeout(r, 500));
-    }
+
+        // --- BƯỚC 5: KẾT THÚC DYNAMAX ---
+        if (isDynamax) {
+            atk.style.transition = 'transform 0.5s ease-out';
+            atk.style.transform = 'scale(1) translate(0,0)';
+            atk.classList.remove('dynamax-active');
+            await new Promise(r => setTimeout(r, 500));
+        }
+
+        resolve(); // QUAN TRỌNG: Giải phóng lượt đánh, không còn bị khựng
+    });
 }
 // Hàm bổ trợ hiển thị sát thương
 function showFloatingDamage(targetEl, amount, isCrit) {
@@ -762,7 +833,6 @@ async function doAction(idx) {
     const p = pTeam[pIdx];
     const e = eTeam[eIdx];
     
-    // Giả sử sIdx = 3 là kỹ năng Dynamax (Skill thứ 4)
     const isDynamaxAction = (idx === 3);
     const s = p.skills[idx];
 
@@ -778,11 +848,13 @@ async function doAction(idx) {
         addLog(`${p.name} activates DYNAMAX!!`);
         updateUI();
 
-        // Gọi attackAnim với isDynamax = true
-        // Nó sẽ tự động: Chậm lại (0.8s) -> Phóng to -> Khựng 1s -> Đánh
-        await attackAnim('p-sprite', 1, false, 160, true); 
+        // Dynamax: Sát thương gốc 160 + Bonus 15% nếu là huyền thoại
+        let dynaDmg = 160;
+        if (p.isLegendary) dynaDmg = Math.floor(dynaDmg * 1.15);
+
+        await attackAnim('p-sprite', 1, false, dynaDmg, true); 
         
-        e.currentHp = Math.max(0, e.currentHp - 160);
+        e.currentHp = Math.max(0, e.currentHp - dynaDmg);
         p.fury = Math.min(100, p.fury + 50);
     } 
     else {
@@ -793,33 +865,44 @@ async function doAction(idx) {
             const attackerEl = document.getElementById('p-sprite');
             showElementalAura(attackerEl, p, 'ultimate');
 
+            // Hiển thị tên chiêu Ultimate (Dùng hệ của chiêu thức s.type)
             if (p.isLegendary) {
-                await announceSkill(s.n, TYPE_COLORS[p.type] || '#fff', p.id);
+                await announceSkill(s.n, TYPE_COLORS[s.type] || '#fff', p.id);
             }
         }
 
-        let finalDamage = s.d;
-        let multiplier = 1.0;
+        // --- LOGIC TÍNH SÁT THƯƠNG MỚI ---
+        // 1. Tính hệ số khắc hệ (Multiplier) dựa trên hệ của chiêu thức và các hệ của đối thủ
+        let multiplier = getEffectiveness(s.type, e.types); 
 
-        // Tính môi trường
-        if (p.type === currentMap.type) multiplier = 1.3;
-        const envDebuffs = { 'FIRE': 'WATER', 'WATER': 'ELECTRIC', 'GRASS': 'FIRE', 'ICE': 'FIRE' };
-        if (envDebuffs[p.type] === currentMap.type) multiplier = 0.7;
+        // 2. Tính sát thương cơ bản từ chiêu thức
+        let damage = s.d;
 
-        finalDamage = Math.floor(finalDamage * multiplier);
+        // 3. Bonus 15% sát thương nếu là Pokemon Huyền thoại
+        if (p.isLegendary) {
+            damage *= 1.15;
+        }
 
-        // Trượt đòn
-        let missChance = 0.1; 
-        if (e.type === currentMap.type) missChance += 0.1; 
-        const isMissing = Math.random() < missChance;
+        // 4. Tính sát thương cuối cùng
+        const finalDamage = Math.floor(damage * multiplier);
+
+        // 5. Tính xác suất trượt (5% mặc định hoặc multiplier = 0 là hệ miễn nhiễm)
+        const isMissing = (Math.random() < 0.05) || (multiplier === 0);
 
         addLog(`${p.name} used ${s.n}!`);
 
-        // Gọi animation thường (isDynamax = false)
+        // Hiển thị hiệu quả khắc hệ vào log
+        if (!isMissing) {
+            if (multiplier > 1) addLog("It's super effective!");
+            else if (multiplier < 1 && multiplier > 0) addLog("It's not very effective...");
+        }
+
+        // Gọi animation: Truyền multiplier để hiển thị "MISSING!" nếu cần
         await attackAnim('p-sprite', isMissing ? 0 : multiplier, s.isU, finalDamage, false);
 
         if (isMissing) {
-            addLog(`The attack missed!`);
+            if (multiplier === 0) addLog(`It had no effect on ${e.name}...`);
+            else addLog(`The attack missed!`);
         } else {
             e.currentHp = Math.max(0, e.currentHp - finalDamage);
             if (!s.isU) p.fury = Math.min(100, p.fury + 30);
@@ -831,6 +914,7 @@ async function doAction(idx) {
     await checkDeath();
     
     if (eIdx < eTeam.length && eTeam[eIdx].currentHp > 0) {
+        pTurn = false; // Chuyển lượt sang máy
         setTimeout(enemyTurn, 1000); 
     } else {
         busy = false; 
@@ -853,34 +937,34 @@ function showElementalAura(targetEl, pokemon, type = 'hit') {
     // Tự xóa sau khi diễn xong
     setTimeout(() => aura.remove(), 1000);
 }
+// Thay đổi hàm useDynamax để chặn dùng lần thứ 2
 async function useDynamax() {
-    // 1. Kiểm tra trạng thái
-    if (busy || pTeam[pIdx].hasUsedDynamax) return;
+    // Kiểm tra: Nếu đang bận, hoặc ĐÃ DÙNG Dynamax trong trận này rồi thì thoát
+    if (busy || pDynamaxUsedInGame) return; 
+    
     busy = true; 
+    pDynamaxUsedInGame = true; // Đánh dấu đã dùng (biến toàn cục)
 
     const p = pTeam[pIdx];
     const e = eTeam[eIdx];
 
-    // 2. Đánh dấu đã sử dụng
-    p.hasUsedDynamax = true; 
     addLog(`${p.name} activates DYNAMAX!!`);
     updateUI();
 
-    // 3. GỌI ANIMATION (Quan trọng: số true cuối cùng kích hoạt audio và phóng to)
-    // Tham số: (attackerId, multiplier, isUltimate, damageAmount, isDynamax)
+    // Thực hiện animation và sát thương
     await attackAnim('p-sprite', 1, false, 160, true); 
 
-    // 4. Tính sát thương và hồi nộ
     e.currentHp = Math.max(0, e.currentHp - 160);
     p.fury = Math.min(100, p.fury + 50);
 
-    // 5. Kết thúc lượt
     await checkDeath();
     updateUI(); 
+
+    // Nếu địch còn sống thì đổi lượt, nếu chết checkDeath đã xử lý
     if (e.currentHp > 0) {
         setTimeout(enemyTurn, 1000);
     } else {
-        busy = false;
+        busy = false; // Giải phóng để người chơi có thể bấm sau khi địch mới spawn
     }
 }
 // Hàm kiểm tra eType có khắc chế pType không
@@ -898,8 +982,10 @@ function checkTypeAdvantage(attackerType, defenderType) {
     return chart[attackerType] ? chart[attackerType].includes(defenderType) : false;
 }
 async function enemyTurn() {
-    if (eIdx >= eTeam.length || eTeam[eIdx].currentHp <= 0) {
-        busy = false; return;
+    // 1. Kiểm tra điều kiện dừng ngay lập tức
+    if (eIdx >= eTeam.length || pIdx >= pTeam.length || eTeam[eIdx].currentHp <= 0) {
+        busy = false; 
+        return;
     }
     
     const p = pTeam[pIdx];
@@ -907,20 +993,25 @@ async function enemyTurn() {
     const enemyEl = document.getElementById('e-sprite');
     const isLastPkmn = (eIdx === eTeam.length - 1);
     
-    let shouldDynamax = !e.hasUsedDynamax && (isLastPkmn || checkTypeAdvantage(e.type, p.type));
+    // Kiểm tra hệ (ưu tiên lấy hệ đầu tiên trong mảng types)
+    const eType = e.types ? e.types[0] : e.type; 
+
+    // 2. Quyết định Dynamax (Chỉ dùng 1 lần)
+    let shouldDynamax = !e.hasUsedDynamax && (isLastPkmn || checkTypeAdvantage(eType, p.types[0]));
 
     if (shouldDynamax) {
         e.hasUsedDynamax = true; 
         addLog(`Enemy ${e.name} activates DYNAMAX!!`);
         updateUI();
 
-        // GỌI DYNAMAX: isUltimate=false, isDynamax=true
+        // Dynamax luôn trúng (multiplier = 1)
         await attackAnim('e-sprite', 1, false, 160, true); 
         
         p.currentHp = Math.max(0, p.currentHp - 160);
         e.fury = Math.min(100, e.fury + 50);
     } 
     else {
+        // 3. Chọn kỹ năng (Skill 2 là Ultimate)
         const sIdx = (e.fury >= 100) ? 2 : (Math.random() > 0.4 ? 1 : 0);
         const s = e.skills[sIdx];
         
@@ -928,15 +1019,21 @@ async function enemyTurn() {
             e.fury = 0;
             updateUI(); 
             showElementalAura(enemyEl, e, 'ultimate'); 
-            if (e.isLegendary) await announceSkill(s.n, TYPE_COLORS[e.type] || '#fff', e.id);
+            // Sử dụng eType để lấy màu
+            if (e.isLegendary) await announceSkill(s.n, TYPE_COLORS[eType] || '#fff', e.id);
         }
         
-        addLog(`Enemy ${e.name} used ${s.n}!`);
-        let finalDamage = Math.floor(s.d * (e.type === currentMap.type ? 1.3 : 1.0));
+        addLog(`Enemy ${e.name} uses ${s.n}!`);
+        
+        // Tính sát thương cộng thêm từ môi trường
+        let finalDamage = Math.floor(s.d * (eType === currentMap.type ? 1.3 : 1.0));
+        
+        // Tỷ lệ hụt (Missing)
         const isMissing = Math.random() < 0.1;
+        const mult = isMissing ? 0 : 1;
 
-        // GỌI THƯỜNG/ULTI: isDynamax luôn = false
-        await attackAnim('e-sprite', isMissing ? 0 : 1, s.isU, finalDamage, false);
+        // Chờ hoạt ảnh kết thúc
+        await attackAnim('e-sprite', mult, s.isU, finalDamage, false);
         
         if (!isMissing) {
             p.currentHp = Math.max(0, p.currentHp - finalDamage);
@@ -944,9 +1041,18 @@ async function enemyTurn() {
         }
     }
 
+    // 4. Kiểm tra xem người chơi có thua không
     await checkDeath();
     updateUI(); 
-    setTimeout(() => { busy = false; pTurn = true; updateUI(); }, 500);
+
+    // 5. Giải phóng lượt (Chỉ thực hiện nếu trận đấu chưa kết thúc)
+    if (pIdx < pTeam.length && eIdx < eTeam.length) {
+        setTimeout(() => { 
+            busy = false; 
+            pTurn = true; 
+            updateUI(); 
+        }, 500);
+    }
 }
 
 async function checkDeath() {

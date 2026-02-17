@@ -405,16 +405,11 @@ button[onclick="toggleSearch()"] {
         
         @keyframes pulse-gold { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
 
-        .missing-text {
-            position: absolute;
-            color: #ff3e3e;
-            font-family: 'Press Start 2P', cursive;
-            font-size: 12px;
-            text-shadow: 2px 2px 0 #000;
-            z-index: 50;
-            pointer-events: none;
-            animation: float-up 1s ease-out forwards;
-        }
+.missing{
+    animation: float-up 1s ease-in-out infinite alternate;
+    color: #ff0000;
+    font-weight: bold;
+}
 
         @keyframes float-up {
             0% { transform: translateY(0); opacity: 1; }
