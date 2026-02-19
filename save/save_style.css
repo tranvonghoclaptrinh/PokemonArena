@@ -7,6 +7,7 @@
             --pk-light: #f0f0f0;
         }
 
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #0f172a;
@@ -76,16 +77,73 @@ button[onclick="toggleSearch()"] {
     animation: float-anim 3s ease-in-out infinite;
 }
 
+/* Hiệu ứng bay bổng nhẹ nhàng hơn (giảm từ -15px xuống -8px) */
 @keyframes float-anim {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-15px); }
+    50% { transform: translateY(-8px); }
 }
+
+/* Slot kẻ địch */
 .enemy-slot { 
-    bottom: 180px; /* Càng nhỏ thì Pokemon địch càng sát xuống dưới */
+    bottom: 180px; 
     right: 100px; 
 }
+/* --- DYNAMAX: Chỉ bóng đổ đỏ rực và tương phản cao --- */
+/* --- DYNAMAX: Chỉ bóng đổ đỏ rực, không mây --- */
+.dynamax-active {
+    filter: drop-shadow(0 0 20px #ff006a) contrast(1.2) brightness(1.1) !important;
+    z-index: 100;
+    transition: filter 0.5s ease;
+}
+/* --- HIỆU ỨNG VÒNG SÁNG HỆ (ELEMENTAL AURA) --- */
+.elemental-aura {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 40;
+    /* Màu mặc định là trắng, sẽ được JS ghi đè */
+    --aura-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 20px 10px var(--aura-color);
+    border: 4px solid var(--aura-color);
+    opacity: 0;
+}
 
+/* Hiệu ứng cho Ultimate: Vòng sáng tỏa rộng và xoáy */
+.aura-ultimate {
+    animation: aura-expand-spin 0.8s ease-out forwards;
+}
 
+/* Hiệu ứng cho Hit Damage: Vòng sáng lóe lên nhanh */
+.aura-hit {
+    animation: aura-flash 0.4s ease-out forwards;
+}
+
+@keyframes aura-expand-spin {
+    0% { transform: translate(-50%, -50%) scale(0.5) rotate(0deg); opacity: 1; }
+    50% { opacity: 0.8; border-width: 8px; }
+    100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+}
+
+@keyframes aura-flash {
+    0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+}
+.hit-effect {
+    /* Chỉ rung và làm sáng, KHÔNG scale */
+    animation: hit-shake-only 0.2s ease-out;
+}
+
+@keyframes hit-shake-only {
+    0% { filter: brightness(3) contrast(1.5); transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+    100% { filter: brightness(1); transform: translateX(0); }
+}
 
         #skill-announcement {
             position: absolute;
@@ -347,16 +405,11 @@ button[onclick="toggleSearch()"] {
         
         @keyframes pulse-gold { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
 
-        .missing-text {
-            position: absolute;
-            color: #ff3e3e;
-            font-family: 'Press Start 2P', cursive;
-            font-size: 12px;
-            text-shadow: 2px 2px 0 #000;
-            z-index: 50;
-            pointer-events: none;
-            animation: float-up 1s ease-out forwards;
-        }
+.missing{
+    animation: float-up 1s ease-in-out infinite alternate;
+    color: #ff0000;
+    font-weight: bold;
+}
 
         @keyframes float-up {
             0% { transform: translateY(0); opacity: 1; }

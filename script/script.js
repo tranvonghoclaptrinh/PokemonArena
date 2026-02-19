@@ -179,15 +179,313 @@ function playSfx(id) {
 }
 
 const POKEMON_DB = {};
+const REAL_TYPE_MAP = {
+1:["GRASS","POISON"],2:["GRASS","POISON"],3:["GRASS","POISON"],
+4:["FIRE"],5:["FIRE"],6:["FIRE","FLYING"],
+7:["WATER"],8:["WATER"],9:["WATER"],
+10:["BUG"],11:["BUG"],12:["BUG","FLYING"],
+13:["BUG","POISON"],14:["BUG","POISON"],15:["BUG","POISON"],
+16:["NORMAL","FLYING"],17:["NORMAL","FLYING"],18:["NORMAL","FLYING"],
+19:["NORMAL"],20:["NORMAL"],
+21:["NORMAL","FLYING"],22:["NORMAL","FLYING"],
+23:["POISON"],24:["POISON"],
+25:["ELECTRIC"],26:["ELECTRIC"],
+27:["GROUND"],28:["GROUND"],
+29:["POISON"],30:["POISON"],31:["POISON","GROUND"],
+32:["POISON"],33:["POISON"],34:["POISON","GROUND"],
+35:["FAIRY"],36:["FAIRY"],
+37:["FIRE"],38:["FIRE"],
+39:["NORMAL","FAIRY"],40:["NORMAL","FAIRY"],
+41:["POISON","FLYING"],42:["POISON","FLYING"],
+43:["GRASS","POISON"],44:["GRASS","POISON"],45:["GRASS","POISON"],
+46:["BUG","GRASS"],47:["BUG","GRASS"],
+48:["BUG","POISON"],49:["BUG","POISON"],
+50:["GROUND"],51:["GROUND"],
+52:["NORMAL"],53:["NORMAL"],
+54:["WATER"],55:["WATER"],
+56:["FIGHTING"],57:["FIGHTING"],
+58:["FIRE"],59:["FIRE"],
+60:["WATER"],61:["WATER"],62:["WATER","FIGHTING"],
+63:["PSYCHIC"],64:["PSYCHIC"],65:["PSYCHIC"],
+66:["FIGHTING"],67:["FIGHTING"],68:["FIGHTING"],
+69:["GRASS","POISON"],70:["GRASS","POISON"],71:["GRASS","POISON"],
+72:["WATER","POISON"],73:["WATER","POISON"],
+74:["ROCK","GROUND"],75:["ROCK","GROUND"],76:["ROCK","GROUND"],
+77:["FIRE"],78:["FIRE"],
+79:["WATER","PSYCHIC"],80:["WATER","PSYCHIC"],
+81:["ELECTRIC","STEEL"],82:["ELECTRIC","STEEL"],
+83:["NORMAL","FLYING"],84:["NORMAL","FLYING"],85:["NORMAL","FLYING"],
+86:["WATER"],87:["WATER","ICE"],
+88:["POISON"],89:["POISON"],
+90:["WATER"],91:["WATER","ICE"],
+92:["GHOST","POISON"],93:["GHOST","POISON"],94:["GHOST","POISON"],
+95:["ROCK","GROUND"],
+96:["PSYCHIC"],97:["PSYCHIC"],
+98:["WATER"],99:["WATER"],
+100:["ELECTRIC"],101:["ELECTRIC"],
+102:["GRASS","PSYCHIC"],103:["GRASS","PSYCHIC"],
+104:["GROUND"],105:["GROUND"],
+106:["FIGHTING"],107:["FIGHTING"],
+108:["NORMAL"],
+109:["POISON"],110:["POISON"],
+111:["GROUND","ROCK"],112:["GROUND","ROCK"],
+113:["NORMAL"],
+114:["GRASS"],
+115:["NORMAL"],
+116:["WATER"],117:["WATER"],
+118:["WATER"],119:["WATER"],
+120:["WATER"],121:["WATER","PSYCHIC"],
+122:["PSYCHIC","FAIRY"],
+123:["BUG","FLYING"],
+124:["ICE","PSYCHIC"],
+125:["ELECTRIC"],
+126:["FIRE"],
+127:["BUG"],
+128:["NORMAL"],
+129:["WATER"],130:["WATER","FLYING"],
+131:["WATER","ICE"],
+132:["NORMAL"],
+133:["NORMAL"],
+134:["WATER"],135:["ELECTRIC"],136:["FIRE"],
+137:["NORMAL"],
+138:["ROCK","WATER"],139:["ROCK","WATER"],140:["ROCK","WATER"],141:["ROCK","WATER"],
+142:["ROCK","FLYING"],
+143:["NORMAL"],
+144:["ICE","FLYING"],145:["ELECTRIC","FLYING"],146:["FIRE","FLYING"],
+147:["DRAGON"],148:["DRAGON"],149:["DRAGON","FLYING"],
+150:["PSYCHIC"],151:["PSYCHIC"],
+152:["GRASS"],153:["GRASS"],154:["GRASS"],
+155:["FIRE"],156:["FIRE"],157:["FIRE"],
+158:["WATER"],159:["WATER"],160:["WATER"],
+161:["NORMAL"],162:["NORMAL"],
+163:["NORMAL","FLYING"],164:["NORMAL","FLYING"],
+165:["BUG","FLYING"],166:["BUG","FLYING"],
+167:["BUG","POISON"],168:["BUG","POISON"],
+169:["POISON","FLYING"],
+170:["WATER","ELECTRIC"],171:["WATER","ELECTRIC"],
+172:["ELECTRIC"],
+173:["FAIRY"],
+174:["NORMAL","FAIRY"],
+175:["FAIRY"],176:["FAIRY","FLYING"],
+177:["PSYCHIC","FLYING"],178:["PSYCHIC","FLYING"],
+179:["ELECTRIC"],180:["ELECTRIC"],181:["ELECTRIC"],
+182:["GRASS"],
+183:["WATER","FAIRY"],184:["WATER","FAIRY"],
+185:["ROCK"],
+186:["WATER"],
+187:["GRASS","FLYING"],188:["GRASS","FLYING"],189:["GRASS","FLYING"],
+190:["NORMAL"],
+191:["GRASS"],192:["GRASS"],
+193:["BUG","FLYING"],
+194:["WATER","GROUND"],195:["WATER","GROUND"],
+196:["PSYCHIC"],
+197:["DARK"],
+198:["DARK","FLYING"],
+199:["WATER","PSYCHIC"],
+200:["GHOST"],
+201:["PSYCHIC"],
+202:["PSYCHIC"],
+203:["NORMAL","PSYCHIC"],
+204:["BUG"],
+205:["BUG","STEEL"],
+206:["NORMAL"],
+207:["GROUND","FLYING"],
+208:["STEEL","GROUND"],
+209:["FAIRY"],210:["FAIRY"],
+211:["WATER","POISON"],
+212:["BUG","STEEL"],
+213:["BUG","ROCK"],
+214:["BUG","FIGHTING"],
+215:["DARK","ICE"],
+216:["NORMAL"],217:["NORMAL"],
+218:["FIRE"],219:["FIRE","ROCK"],
+220:["ICE","GROUND"],221:["ICE","GROUND"],
+222:["WATER","ROCK"],
+223:["WATER"],224:["WATER"],
+225:["ICE","FLYING"],
+226:["WATER","FLYING"],
+227:["DARK","STEEL"],
+228:["DARK","FIRE"],229:["DARK","FIRE"],
+230:["WATER","DRAGON"],
+231:["GROUND"],232:["GROUND"],
+233:["NORMAL"],
+234:["NORMAL"],
+235:["NORMAL"],
+236:["FIGHTING"],237:["FIGHTING"],
+238:["ICE","PSYCHIC"],
+239:["ELECTRIC"],
+240:["FIRE"],
+241:["NORMAL"],
+242:["NORMAL"],
+243:["ELECTRIC"],
+244:["FIRE"],
+245:["WATER"],
+246:["ROCK","GROUND"],247:["ROCK","GROUND"],
+248:["ROCK","DARK"],
+249:["PSYCHIC","FLYING"],
+250:["FIRE","FLYING"],
+251:["PSYCHIC","GRASS"],
+252:["GRASS"],253:["GRASS"],254:["GRASS"],
+255:["FIRE"],256:["FIRE","FIGHTING"],257:["FIRE","FIGHTING"],
+258:["WATER"],259:["WATER","GROUND"],260:["WATER","GROUND"],
+261:["DARK"],262:["DARK"],
+263:["NORMAL"],264:["NORMAL"],
+265:["BUG"],266:["BUG"],267:["BUG","FLYING"],
+268:["BUG"],269:["BUG","POISON"],
+270:["WATER","GRASS"],271:["WATER","GRASS"],272:["WATER","GRASS"],
+273:["GRASS","DARK"],274:["GRASS","DARK"],275:["GRASS","DARK"],
+276:["NORMAL","FLYING"],277:["NORMAL","FLYING"],
+278:["WATER","FLYING"],279:["WATER","FLYING"],
+280:["PSYCHIC","FAIRY"],281:["PSYCHIC","FAIRY"],282:["PSYCHIC","FAIRY"],
+283:["BUG","WATER"],284:["BUG","FLYING"],
+285:["GRASS"],286:["GRASS","FIGHTING"],
+287:["NORMAL"],288:["NORMAL"],289:["NORMAL"],
+290:["BUG","GROUND"],291:["BUG","FLYING"],292:["BUG","GHOST"],
+293:["NORMAL"],294:["NORMAL"],295:["NORMAL"],
+296:["FIGHTING"],297:["FIGHTING"],
+298:["NORMAL","FAIRY"],
+299:["ROCK"],
+300:["NORMAL"],301:["NORMAL"],
+302:["DARK","GHOST"],
+303:["STEEL","FAIRY"],
+304:["STEEL","ROCK"],305:["STEEL","ROCK"],306:["STEEL","ROCK"],
+307:["FIGHTING","PSYCHIC"],308:["FIGHTING","PSYCHIC"],
+309:["ELECTRIC"],310:["ELECTRIC"],
+311:["ELECTRIC"],312:["ELECTRIC"],
+313:["BUG"],314:["BUG"],
+315:["GRASS","POISON"],
+316:["POISON"],317:["POISON"],
+318:["WATER","DARK"],319:["WATER","DARK"],
+320:["WATER"],321:["WATER"],
+322:["FIRE","GROUND"],323:["FIRE","GROUND"],
+324:["FIRE"],
+325:["PSYCHIC"],326:["PSYCHIC"],
+327:["NORMAL"],
+328:["GROUND"],
+329:["GROUND","DRAGON"],330:["GROUND","DRAGON"],
+331:["GRASS"],332:["GRASS","DARK"],
+333:["NORMAL","FLYING"],334:["DRAGON","FLYING"],
+335:["NORMAL"],
+336:["POISON"],
+337:["ROCK","PSYCHIC"],338:["ROCK","PSYCHIC"],
+339:["WATER","GROUND"],340:["WATER","GROUND"],
+341:["WATER"],342:["WATER","DARK"],
+343:["GROUND","PSYCHIC"],344:["GROUND","PSYCHIC"],
+345:["ROCK","GRASS"],346:["ROCK","GRASS"],
+347:["ROCK","BUG"],348:["ROCK","BUG"],
+349:["WATER"],350:["WATER"],
+351:["NORMAL"],
+352:["NORMAL"],
+353:["GHOST"],354:["GHOST"],
+355:["GHOST"],356:["GHOST"],
+357:["GRASS","FLYING"],
+358:["PSYCHIC"],
+359:["DARK"],
+360:["PSYCHIC"],
+361:["ICE"],362:["ICE"],
+363:["ICE","WATER"],364:["ICE","WATER"],365:["ICE","WATER"],
+366:["WATER"],367:["WATER"],368:["WATER"],
+369:["WATER","ROCK"],
+370:["WATER"],
+371:["DRAGON"],372:["DRAGON"],373:["DRAGON","FLYING"],
+374:["STEEL","PSYCHIC"],375:["STEEL","PSYCHIC"],376:["STEEL","PSYCHIC"],
+377:["ROCK"],
+378:["ICE"],
+379:["STEEL"],
+380:["DRAGON","PSYCHIC"],381:["DRAGON","PSYCHIC"],
+382:["WATER"],
+383:["GROUND"],
+384:["DRAGON","FLYING"],
+385:["STEEL","PSYCHIC"],
+386:["PSYCHIC"],
+387:["GRASS"],388:["GRASS"],389:["GRASS","GROUND"],
+390:["FIRE"],391:["FIRE","FIGHTING"],392:["FIRE","FIGHTING"],
+393:["WATER"],394:["WATER"],395:["WATER","STEEL"],
+396:["NORMAL","FLYING"],397:["NORMAL","FLYING"],398:["NORMAL","FLYING"],
+399:["NORMAL"],400:["NORMAL","WATER"],
+401:["BUG"],402:["BUG"],
+403:["ELECTRIC"],404:["ELECTRIC"],405:["ELECTRIC"],
+406:["GRASS","POISON"],407:["GRASS","POISON"],
+408:["ROCK"],409:["ROCK"],
+410:["ROCK","STEEL"],411:["ROCK","STEEL"],
+412:["BUG"],413:["BUG","GRASS"],414:["BUG","FLYING"],
+415:["BUG","FLYING"],416:["BUG","FLYING"],
+417:["ELECTRIC"],
+418:["WATER"],419:["WATER"],
+420:["GRASS"],421:["GRASS"],
+422:["WATER"],423:["WATER","GROUND"],
+424:["NORMAL"],
+425:["GHOST","FLYING"],426:["GHOST","FLYING"],
+427:["NORMAL"],428:["NORMAL"],
+429:["GHOST"],
+430:["DARK","FLYING"],
+431:["NORMAL"],432:["NORMAL"],
+433:["PSYCHIC"],
+434:["POISON","DARK"],435:["POISON","DARK"],
+436:["STEEL","PSYCHIC"],437:["STEEL","PSYCHIC"],
+438:["ROCK"],
+439:["PSYCHIC","FAIRY"],
+440:["NORMAL"],
+441:["NORMAL","FLYING"],
+442:["DARK","GHOST"],
+443:["DRAGON","GROUND"],444:["DRAGON","GROUND"],445:["DRAGON","GROUND"],
+446:["NORMAL"],
+447:["FIGHTING"],448:["FIGHTING","STEEL"],
+449:["GROUND"],450:["GROUND"],
+451:["POISON","BUG"],
+452:["POISON","DARK"],
+453:["POISON","FIGHTING"],454:["POISON","FIGHTING"],
+455:["GRASS"],
+456:["WATER"],457:["WATER"],
+458:["WATER","FLYING"],
+459:["GRASS","ICE"],460:["GRASS","ICE"],
+461:["DARK","ICE"],
+462:["ELECTRIC","STEEL"],
+463:["NORMAL"],
+464:["GROUND","ROCK"],
+465:["GRASS"],
+466:["ELECTRIC"],
+467:["FIRE"],
+468:["FAIRY","FLYING"],
+469:["BUG","FLYING"],
+470:["GRASS"],
+471:["ICE"],
+472:["GROUND","FLYING"],
+473:["ICE","GROUND"],
+474:["NORMAL"],
+475:["PSYCHIC","FIGHTING"],
+476:["ROCK","STEEL"],
+477:["GHOST"],
+478:["ICE","GHOST"],
+479:["ELECTRIC","GHOST"],
+480:["PSYCHIC"],481:["PSYCHIC"],482:["PSYCHIC"],
+483:["STEEL","DRAGON"],
+484:["WATER","DRAGON"],
+485:["FIRE","STEEL"],
+486:["NORMAL"],
+487:["GHOST","DRAGON"],
+488:["PSYCHIC"],
+489:["WATER"],490:["WATER"],
+491:["DARK"],
+492:["GRASS"],
+493:["NORMAL"]
+};
 
-// 1. Khởi tạo Database cho 493 Pokémon với logic Song Hệ ngẫu nhiên (~50%)
+// 1. Khởi tạo Database cho 493 Pokémon
 for (let id = 1; id <= 493; id++) {
-    const types = [Object.keys(TYPE_COLORS)[id % 18]];
+    let types = [];
     
-    // Logic: Khoảng 50% Pokemon thường sẽ có hệ thứ 2 (id chẵn hoặc lẻ tùy chọn)
-    if (id % 2 === 0) {
-        const secondType = Object.keys(TYPE_COLORS)[(id + 5) % 18];
-        if (secondType !== types[0]) types.push(secondType);
+    // KIỂM TRA: Nếu ID có trong REAL_TYPE_MAP thì lấy hệ chuẩn
+    if (REAL_TYPE_MAP[id]) {
+        types = [...REAL_TYPE_MAP[id]];
+    } else {
+        // Nếu chưa định nghĩa trong REAL_TYPE_MAP, dùng logic ngẫu nhiên như cũ
+        const firstType = Object.keys(TYPE_COLORS)[id % 18];
+        types.push(firstType);
+        if (id % 2 === 0) {
+            const secondType = Object.keys(TYPE_COLORS)[(id + 5) % 18];
+            if (secondType !== firstType) types.push(secondType);
+        }
     }
 
     POKEMON_DB[id] = { 
@@ -198,7 +496,11 @@ for (let id = 1; id <= 493; id++) {
 }
 
 // 2. Gán tên thật (Giữ nguyên mảng COMMON_NAMES của bạn)
-const COMMON_NAMES = ["BULBASAUR", "IVYSAUR", "VENUSAUR", "CHARMANDER", "CHARMELEON", "CHARIZARD", "SQUIRTLE", "WARTORTLE", "BLASTOISE", "CATERPIE", "METAPOD", "BUTTERFREE", "WEEDLE", "KAKUNA", "BEEDRILL", "PIDGEY", "PIDGEOTTO", "PIDGEOT", "RATTATA", "RATICATE", "SPEAROW", "FEAROW", "EKANS", "ARBOK", "PIKACHU", "RAICHU", "SANDSHREW", "SANDSLASH", "NIDORAN♀", "NIDORINA", "NIDOQUEEN", "NIDORAN♂", "NIDORINO", "NIDOKING", "CLEFAIRY", "CLEFABLE", "VULPIX", "NINETALES", "JIGGLYPUFF", "WIGGLYTUFF", "ZUBAT", "GOLBAT", "ODDISH", "GLOOM", "VILEPLUME", "PARAS", "PARASECT", "VENONAT", "VENOMOTH", "DIGLETT", "DUGTRIO", "MEOWTH", "PERSIAN", "PSYDUCK", "GOLDUCK", "MANKEY", "PRIMEAPE", "GROWLITHE", "ARCANINE", "POLIWAG", "POLIWHIRL", "POLIWRATH", "ABRA", "KADABRA", "ALAKAZAM", "MACHOP", "MACHOKE", "MACHAMP", "BELLSPROUT", "WEEPINBELL", "VICTREEBEL", "TENTACOOL", "TENTACRUEL", "GEODUDE", "GRAVELER", "GOLEM", "PONYTA", "RAPIDASH", "SLOWPOKE", "SLOWBRO", "MAGNEMITE", "MAGNETON", "FARFETCH'D", "DODUO", "DODRIO", "SEEL", "DEWGONG", "GRIMER", "MUK", "SHELLDER", "CLOYSTER", "GASTLY", "HAUNTER", "GENGAR", "ONIX", "DROWZEE", "HYPNO", "KRABBY", "KINGLER", "VOLTORB"];
+const GEN_1_NAMES = ["BULBASAUR", "IVYSAUR", "VENUSAUR", "CHARMANDER", "CHARMELEON", "CHARIZARD", "SQUIRTLE", "WARTORTLE", "BLASTOISE", "CATERPIE", "METAPOD", "BUTTERFREE", "WEEDLE", "KAKUNA", "BEEDRILL", "PIDGEY", "PIDGEOTTO", "PIDGEOT", "RATTATA", "RATICATE", "SPEAROW", "FEAROW", "EKANS", "ARBOK", "PIKACHU", "RAICHU", "SANDSHREW", "SANDSLASH", "NIDORAN♀", "NIDORINA", "NIDOQUEEN", "NIDORAN♂", "NIDORINO", "NIDOKING", "CLEFAIRY", "CLEFABLE", "VULPIX", "NINETALES", "JIGGLYPUFF", "WIGGLYTUFF", "ZUBAT", "GOLBAT", "ODDISH", "GLOOM", "VILEPLUME", "PARAS", "PARASECT", "VENONAT", "VENOMOTH", "DIGLETT", "DUGTRIO", "MEOWTH", "PERSIAN", "PSYDUCK", "GOLDUCK", "MANKEY", "PRIMEAPE", "GROWLITHE", "ARCANINE", "POLIWAG", "POLIWHIRL", "POLIWRATH", "ABRA", "KADABRA", "ALAKAZAM", "MACHOP", "MACHOKE", "MACHAMP", "BELLSPROUT", "WEEPINBELL", "VICTREEBEL", "TENTACOOL", "TENTACRUEL", "GEODUDE", "GRAVELER", "GOLEM", "PONYTA", "RAPIDASH", "SLOWPOKE", "SLOWBRO", "MAGNEMITE", "MAGNETON", "FARFETCH'D", "DODUO", "DODRIO", "SEEL", "DEWGONG", "GRIMER", "MUK", "SHELLDER", "CLOYSTER", "GASTLY", "HAUNTER", "GENGAR", "ONIX", "DROWZEE", "HYPNO", "KRABBY", "KINGLER", "VOLTORB","ELECTRODE", "EXEGGCUTE", "EXEGGUTOR", "CUBONE", "MAROWAK", "HITMONLEE", "HITMONCHAN", "LICKITUNG", "KOFFING", "WEEZING", "RHYHORN", "RHYDON", "CHANSEY", "TANGELA", "KANGASKHAN", "HORSEA", "SEADRA", "GOLDEEN", "SEAKING", "STARYU", "STARMIE", "MR. MIME", "SCYTHER", "JYNX", "ELECTABUZZ", "MAGMAR", "PINSIR", "TAUROS", "MAGIKARP", "GYARADOS", "LAPRAS", "DITTO", "EEVEE", "VAPOREON", "JOLTEON", "FLAREON", "PORYGON", "OMANYTE", "OMASTAR", "KABUTO", "KABUTOPS", "AERODACTYL", "SNORLAX", "DRATINI", "DRAGONAIR", "DRAGONITE"];
+const GEN_2_NAMES = ["CHIKORITA","BAYLEEF","MEGANIUM","CYNDAQUIL","QUILAVA","TYPHLOSION","TOTODILE","CROCONAW","FERALIGATR","SENTRET","FURRET","HOOTHOOT","NOCTOWL","LEDYBA","LEDIAN","SPINARAK","ARIADOS","CROBAT","CHINCHOU","LANTURN","PICHU","CLEFFA","IGGLYBUFF","TOGEPI","TOGETIC","NATU","XATU","MAREEP","FLAAFFY","AMPHAROS","BELLOSSOM","MARILL","AZUMARILL","SUDOWOODO","POLITOED","HOPPIP","SKIPLOOM","JUMPLUFF","AIPOM","SUNKERN","SUNFLORA","YANMA","WOOPER","QUAGSIRE","ESPEON","UMBREON","MURKROW","SLOWKING","MISDREAVUS","UNOWN","WOBBUFFET","GIRAFARIG","PINECO","FORRETRESS","DUNSPARCE","GLIGAR","STEELIX","SNUBBULL","GRANBULL","QWILFISH","SCIZOR","SHUCKLE","HERACROSS","SNEASEL","TEDDIURSA","URSARING","SLUGMA","MAGCARGO","SWINUB","PILOSWINE","CORSOLA","REMORAID","OCTILLERY","DELIBIRD","MANTINE","SKARMORY","HOUNDOUR","HOUNDOOM","KINGDRA","PHANPY","DONPHAN","PORYGON2","STANTLER","SMEARGLE","TYROGUE","HITMONTOP","SMOOCHUM","ELEKID","MAGBY","MILTANK","BLISSEY","RAIKOU","ENTEI","SUICUNE","LARVITAR","PUPITAR","TYRANITAR","LUGIA","HO-OH","CELEBI"];
+const GEN_3_NAMES = ["TREECKO","GROVYLE","SCEPTILE","TORCHIC","COMBUSKEN","BLAZIKEN","MUDKIP","MARSHTOMP","SWAMPERT","POOCHYENA","MIGHTYENA","ZIGZAGOON","LINOONE","WURMPLE","SILCOON","BEAUTIFLY","CASCOON","DUSTOX","LOTAD","LOMBRE","LUDICOLO","SEEDOT","NUZLEAF","SHIFTRY","TAILLOW","SWELLOW","WINGULL","PELIPPER","RALTS","KIRLIA","GARDEVOIR","SURSKIT","MASQUERAIN","SHROOMISH","BRELOOM","SLAKOTH","VIGOROTH","SLAKING","NINCADA","NINJASK","SHEDINJA","WHISMUR","LOUDRED","EXPLOUD","MAKUHITA","HARIYAMA","AZURILL","NOSEPASS","SKITTY","DELCATTY","SABLEYE","MAWILE","ARON","LAIRON","AGGRON","MEDITITE","MEDICHAM","ELECTRIKE","MANECTRIC","PLUSLE","MINUN","VOLBEAT","ILLUMISE","ROSELIA","GULPIN","SWALOT","CARVANHA","SHARPEDO","WAILMER","WAILORD","NUMEL","CAMERUPT","TORKOAL","SPOINK","GRUMPIG","SPINDA","TRAPINCH","VIBRAVA","FLYGON","CACNEA","CACTURNE","SWABLU","ALTARIA","ZANGOOSE","SEVIPER","LUNATONE","SOLROCK","BARBOACH","WHISCASH","CORPHISH","CRAWDAUNT","BALTOY","CLAYDOL","LILEEP","CRADILY","ANORITH","ARMALDO","FEEBAS","MILOTIC","CASTFORM","KECLEON","SHUPPET","BANETTE","DUSKULL","DUSCLOPS","TROPIUS","CHIMECHO","ABSOL","WYNAUT","SNORUNT","GLALIE","SPHEAL","SEALEO","WALREIN","CLAMPERL","HUNTAIL","GOREBYSS","RELICANTH","LUVDISC","BAGON","SHELGON","SALAMENCE","BELDUM","METANG","METAGROSS","REGIROCK","REGICE","REGISTEEL","LATIAS","LATIOS","KYOGRE","GROUDON","RAYQUAZA","JIRACHI","DEOXYS"];
+const GEN_4_NAMES = ["TURTWIG","GROTLE","TORTERRA","CHIMCHAR","MONFERNO","INFERNAPE","PIPLUP","PRINPLUP","EMPOLEON","STARLY","STARAVIA","STARAPTOR","BIDOOF","BIBAREL","KRICKETOT","KRICKETUNE","SHINX","LUXIO","LUXRAY","BUDEW","ROSERADE","CRANIDOS","RAMPARDOS","SHIELDON","BASTIODON","BURMY","WORMADAM","MOTHIM","COMBEE","VESPIQUEN","PACHIRISU","BUIZEL","FLOATZEL","CHERUBI","CHERRIM","SHELLOS","GASTRODON","AMBIPOM","DRIFLOON","DRIFBLIM","BUNEARY","LOPUNNY","MISMAGIUS","HONCHKROW","GLAMEOW","PURUGLY","CHINGLING","STUNKY","SKUNTANK","BRONZOR","BRONZONG","BONSLY","MIME JR.","HAPPINY","CHATOT","SPIRITOMB","GIBLE","GABITE","GARCHOMP","MUNCHLAX","RIOLU","LUCARIO","HIPPOPOTAS","HIPPOWDON","SKORUPI","DRAPION","CROAGUNK","TOXICROAK","CARNIVINE","FINNEON","LUMINEON","MANTYKE","SNOVER","ABOMASNOW","WEAVILE","MAGNEZONE","LICKILICKY","RHYPERIOR","TANGROWTH","ELECTIVIRE","MAGMORTAR","TOGEKISS","YANMEGA","LEAFEON","GLACEON","GLISCOR","MAMOSWINE","PORYGON-Z","GALLADE","PROBOPASS","DUSKNOIR","FROSLASS","ROTOM","UXIE","MESPRIT","AZELF","DIALGA","PALKIA","HEATRAN","REGIGIGAS","GIRATINA","CRESSELIA","PHIONE","MANAPHY","DARKRAI","SHAYMIN","ARCEUS"];
+const COMMON_NAMES = [...GEN_1_NAMES, ...GEN_2_NAMES, ...GEN_3_NAMES, ...GEN_4_NAMES];
 COMMON_NAMES.forEach((name, i) => {
     const id = i + 1;
     if (POKEMON_DB[id]) POKEMON_DB[id].name = name;
@@ -322,22 +624,23 @@ function generateSkills(pkmn) {
         'NORMAL': { n: 'Swift', u: 'Giga Impact', d: 50 }
     };
 
-    // --- Chiêu 1: Hệ thứ 2 (nếu có), không thì là Tackle ---
-    let m1 = { n: "Tackle", d: 40, isU: false, type: "NORMAL_BASIC" };
+    // --- Chiêu 1: Nếu có hệ 2 thì lấy hệ 2, nếu không thì lấy chiêu yếu của hệ 1 (thay vì Tackle) ---
+    let m1;
     if (t2 && moveDB[t2]) {
         m1 = { n: moveDB[t2].n, d: moveDB[t2].d, isU: false, type: t2 };
+    } else {
+        // Nếu chỉ có 1 hệ, chiêu 1 là "Quick Attack" của hệ đó (giảm dam nhẹ để phân biệt chiêu 2)
+        const mInfo = moveDB[t1] || moveDB['NORMAL'];
+        m1 = { n: "Quick Attack", d: 45, isU: false, type: t1 };
     }
 
-    // --- Chiêu 2: Luôn mang hệ thứ nhất (t1) ---
+    // --- Chiêu 2: Kỹ năng đặc trưng của hệ chính ---
     const mInfo1 = moveDB[t1] || moveDB['NORMAL'];
     const m2 = { n: mInfo1.n, d: mInfo1.d, isU: false, type: t1 };
 
     // --- Chiêu 3: Ultimate ---
-    // LOGIC MỚI: Nếu 2 hệ mà hệ 1 là NORMAL, lấy hệ 2 làm Ultimate
     let ultType = t1;
-    if (t2 && t1 === 'NORMAL') {
-        ultType = t2;
-    }
+    if (t2 && t1 === 'NORMAL') ultType = t2; // Ưu tiên hệ phụ nếu hệ chính là Normal
 
     const mInfoUlt = moveDB[ultType] || moveDB['NORMAL'];
     
@@ -345,7 +648,7 @@ function generateSkills(pkmn) {
         n: pkmn.isLegendary ? (pkmn.ult || mInfoUlt.u) : mInfoUlt.u, 
         d: pkmn.isLegendary ? 140 : 110, 
         isU: true,
-        type: ultType // Hệ của Ultimate dùng để tính khắc chế
+        type: ultType 
     };
 
     return [m1, m2, m3];
@@ -500,7 +803,7 @@ async function startGame() {
     }
     
     // Đợi một nhịp cực ngắn để trình duyệt xử lý xong lệnh dừng
-    await new Promise(r => setTimeout(r, 50));
+    await new Promise(r => setTimeout(r, 300));
 
     // 2. PHÁT TIẾNG SPAWN
     playSfx('spawn');
@@ -516,7 +819,8 @@ async function startGame() {
             currentHp: p.hp, 
             fury: 0, 
             s: BASE_URL+"back/"+id+".png", 
-            f: BASE_URL+id+".png"
+            f: BASE_URL+id+".png",
+            lowHpWarned: false // Thêm dòng này để theo dõi từng con
         }; 
     });
 
@@ -571,7 +875,7 @@ async function spawnSequence(side) {
     // 3. Gán ảnh mới cho quả bóng và chuẩn bị vị trí ném
     ball.src = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/" + ballName;
     
-    const rect = sprite.parentElement.getBoundingClientRect(); // Lấy tọa độ từ khung chứa
+    const rect = sprite.parentElement.getBoundingClientRect(); 
     const targetX = rect.left + rect.width / 2;
     const targetY = rect.top + rect.height / 2;
 
@@ -591,7 +895,7 @@ async function spawnSequence(side) {
     ball.style.top = `${targetY}px`;
     ball.style.transform = 'translate(-50%, -50%) scale(1.5) rotate(720deg)';
 
-    // Trong lúc bóng đang bay, nạp sẵn ảnh mới cho Pokemon (nhưng vẫn đang opacity 0)
+    // Nạp sẵn ảnh mới cho Pokemon
     sprite.src = isPlayer ? currentPkm.s : currentPkm.f;
 
     await new Promise(r => setTimeout(r, 700));
@@ -615,7 +919,15 @@ async function spawnSequence(side) {
     setTimeout(() => flash.remove(), 600);
 
     if (typeof shakeScreen === 'function') shakeScreen('normal');
+    
+    // 7. Đợi hiệu ứng xuất hiện hoàn tất
     await new Promise(r => setTimeout(r, 300));
+
+    // === PHẦN CHỈNH SỬA QUAN TRỌNG NHẤT ===
+    // Giải phóng trạng thái bận để người chơi có thể click nút Ultimate
+    busy = false; 
+    pTurn = true; // Trả lại lượt cho người chơi
+    updateUI();   // Cập nhật lại thuộc tính disabled của các nút
 }
 
 // HÀM RUNG MÀN HÌNH CHÍNH
@@ -681,7 +993,6 @@ async function attackAnim(attackerId, multiplier = 1, isUltimate = false, damage
             const targetData = isPlayer ? eTeam[eIdx] : pTeam[pIdx];
             if (isMissing) {
                 playSfx('missing');
-                // HIỆN CHỮ MISSING Ở ĐÂY
                 showFloatingDamage(def, "MISSING!", false, true); 
             } else {
                 if (damageAmount > 0) {
@@ -689,13 +1000,30 @@ async function attackAnim(attackerId, multiplier = 1, isUltimate = false, damage
                     showElementalAura(def, targetData, 'hit'); 
                 }
                 
-                if (isDynamax || isUltimate || isCrit) {
+                // ĐỔI LOGIC PHÁT SOUND TẠI ĐÂY:
+                if ( isUltimate) {
+                    // Giữ nguyên sound hoành tráng cho Ultimate
                     playSfx('ultimate'); 
                     shakeScreen('heavy');
-                } else {
-                    playSfx('hit');
-                    shakeScreen('normal');
+                } 
+                if (isDynamax) {
+                    // Giữ nguyên sound hoành tráng cho Dynamax
+                    playSfx('hit-damage'); 
+                    shakeScreen('heavy');
                 }
+                
+                else {
+                    if (!isCrit) { 
+                            // Đòn đánh thường, không chí mạng -> dùng sound 'hit'
+                            playSfx('hit'); 
+                            shakeScreen('normal');
+                        } else {
+                            // Đòn chí mạng (Crit) -> dùng sound 'hit-damage' cho mạnh mẽ
+                            playSfx('hit-damage'); 
+                            shakeScreen('heavy');
+                        }
+                }
+                
                 def.classList.add('hit-effect');
             }
             setTimeout(() => def.classList.remove('hit-effect'), 250);
@@ -827,98 +1155,78 @@ function showMiss(isEnemy) {
 }
 
 async function doAction(idx) {
-    if (busy || pIdx >= pTeam.length) return;
+    // 1. Kiểm tra điều kiện đầu vào: không bận và phải đúng lượt người chơi
+    if (busy || !pTurn || pIdx >= pTeam.length) return;
     busy = true; 
 
     const p = pTeam[pIdx];
     const e = eTeam[eIdx];
     
-    const isDynamaxAction = (idx === 3);
-    const s = p.skills[idx];
-
-    // --- 1. XỬ LÝ DYNAMAX RIÊNG BIỆT ---
-    if (isDynamaxAction) {
+    // Logic Dynamax (idx 3)
+    if (idx === 3) {
         if (p.hasUsedDynamax) {
             addLog(`${p.name} already used Dynamax!`);
             busy = false;
             return;
         }
-        
         p.hasUsedDynamax = true; 
         addLog(`${p.name} activates DYNAMAX!!`);
         updateUI();
 
-        // Dynamax: Sát thương gốc 160 + Bonus 15% nếu là huyền thoại
         let dynaDmg = 160;
         if (p.isLegendary) dynaDmg = Math.floor(dynaDmg * 1.15);
 
         await attackAnim('p-sprite', 1, false, dynaDmg, true); 
-        
         e.currentHp = Math.max(0, e.currentHp - dynaDmg);
         p.fury = Math.min(100, p.fury + 50);
     } 
     else {
-        // --- 2. LOGIC TẤN CÔNG THƯỜNG / ULTIMATE ---
+        // Logic Skill thường/Ultimate
+        const s = p.skills[idx];
         if (s.isU) {
+            if (p.fury < 100) { // Check thêm điều kiện nộ nếu cần
+                addLog("Not enough Fury!");
+                busy = false;
+                return;
+            }
             p.fury = 0; 
             updateUI(); 
-            const attackerEl = document.getElementById('p-sprite');
-            showElementalAura(attackerEl, p, 'ultimate');
-
-            // Hiển thị tên chiêu Ultimate (Dùng hệ của chiêu thức s.type)
-            if (p.isLegendary) {
-                await announceSkill(s.n, TYPE_COLORS[s.type] || '#fff', p.id);
-            }
+            showElementalAura(document.getElementById('p-sprite'), p, 'ultimate');
+            if (p.isLegendary) await announceSkill(s.n, TYPE_COLORS[s.type], p.id);
         }
 
-        // --- LOGIC TÍNH SÁT THƯƠNG MỚI ---
-        // 1. Tính hệ số khắc hệ (Multiplier) dựa trên hệ của chiêu thức và các hệ của đối thủ
         let multiplier = getEffectiveness(s.type, e.types); 
-
-        // 2. Tính sát thương cơ bản từ chiêu thức
-        let damage = s.d;
-
-        // 3. Bonus 15% sát thương nếu là Pokemon Huyền thoại
-        if (p.isLegendary) {
-            damage *= 1.15;
-        }
-
-        // 4. Tính sát thương cuối cùng
-        const finalDamage = Math.floor(damage * multiplier);
-
-        // 5. Tính xác suất trượt (5% mặc định hoặc multiplier = 0 là hệ miễn nhiễm)
+        let finalDamage = Math.floor(s.d * multiplier * (p.isLegendary ? 1.15 : 1));
         const isMissing = (Math.random() < 0.05) || (multiplier === 0);
 
         addLog(`${p.name} used ${s.n}!`);
-
-        // Hiển thị hiệu quả khắc hệ vào log
-        if (!isMissing) {
-            if (multiplier > 1) addLog("It's super effective!");
-            else if (multiplier < 1 && multiplier > 0) addLog("It's not very effective...");
-        }
-
-        // Gọi animation: Truyền multiplier để hiển thị "MISSING!" nếu cần
         await attackAnim('p-sprite', isMissing ? 0 : multiplier, s.isU, finalDamage, false);
 
-        if (isMissing) {
-            if (multiplier === 0) addLog(`It had no effect on ${e.name}...`);
-            else addLog(`The attack missed!`);
-        } else {
+        if (!isMissing) {
             e.currentHp = Math.max(0, e.currentHp - finalDamage);
             if (!s.isU) p.fury = Math.min(100, p.fury + 30);
         }
     }
 
-    // --- 3. KẾT THÚC LƯỢT ---
     updateUI();
-    await checkDeath();
     
-    if (eIdx < eTeam.length && eTeam[eIdx].currentHp > 0) {
-        pTurn = false; // Chuyển lượt sang máy
-        setTimeout(enemyTurn, 1000); 
-    } else {
+    // 2. Kiểm tra kết quả sau đòn đánh
+    const deathResult = await checkDeath();
+
+    // 3. QUYẾT ĐỊNH LƯỢT TIẾP THEO
+    if (deathResult === "enemy_changed") {
+        // Địch vừa bị hạ và đổi con mới -> Trả lượt cho người chơi đánh tiếp
         busy = false; 
+        pTurn = true;
+        updateUI();
+    } 
+    else if (deathResult === "none") {
+        // Không ai chết hoặc địch vẫn còn sống -> Chuyển sang lượt máy
+        pTurn = false;
+        setTimeout(enemyTurn, ACTION_DELAY); 
     }
+    // Nếu deathResult là "game_over" hoặc "player_changed", 
+    // logic trong hàm checkDeath của bạn nên tự xử lý các bước đó.
 }
 function showElementalAura(targetEl, pokemon, type = 'hit') {
     const aura = document.createElement('div');
@@ -937,13 +1245,11 @@ function showElementalAura(targetEl, pokemon, type = 'hit') {
     // Tự xóa sau khi diễn xong
     setTimeout(() => aura.remove(), 1000);
 }
-// Thay đổi hàm useDynamax để chặn dùng lần thứ 2
 async function useDynamax() {
-    // Kiểm tra: Nếu đang bận, hoặc ĐÃ DÙNG Dynamax trong trận này rồi thì thoát
     if (busy || pDynamaxUsedInGame) return; 
     
     busy = true; 
-    pDynamaxUsedInGame = true; // Đánh dấu đã dùng (biến toàn cục)
+    pDynamaxUsedInGame = true; 
 
     const p = pTeam[pIdx];
     const e = eTeam[eIdx];
@@ -951,20 +1257,27 @@ async function useDynamax() {
     addLog(`${p.name} activates DYNAMAX!!`);
     updateUI();
 
-    // Thực hiện animation và sát thương
-    await attackAnim('p-sprite', 1, false, 160, true); 
+    // Sát thương Dynamax
+    let dynaDmg = 160;
+    if (p.isLegendary) dynaDmg = Math.floor(dynaDmg * 1.15);
 
-    e.currentHp = Math.max(0, e.currentHp - 160);
+    await attackAnim('p-sprite', 1, false, dynaDmg, true); 
+
+    e.currentHp = Math.max(0, e.currentHp - dynaDmg);
     p.fury = Math.min(100, p.fury + 50);
-
-    await checkDeath();
     updateUI(); 
 
-    // Nếu địch còn sống thì đổi lượt, nếu chết checkDeath đã xử lý
-    if (e.currentHp > 0) {
-        setTimeout(enemyTurn, 1000);
+    if (e.currentHp <= 0) {
+        // Đợi checkDeath xử lý ném bóng và bên trong checkDeath đã có busy = false
+        await checkDeath(); 
+        // Đảm bảo tuyệt đối sau khi ném bóng xong, người chơi có thể bấm nút
+        busy = false; 
+        pTurn = true;
+        updateUI();
     } else {
-        busy = false; // Giải phóng để người chơi có thể bấm sau khi địch mới spawn
+        // Nếu địch chưa chết mới chuyển lượt cho máy
+        pTurn = false;
+        setTimeout(enemyTurn, 1000);
     }
 }
 // Hàm kiểm tra eType có khắc chế pType không
@@ -982,7 +1295,11 @@ function checkTypeAdvantage(attackerType, defenderType) {
     return chart[attackerType] ? chart[attackerType].includes(defenderType) : false;
 }
 async function enemyTurn() {
-    // 1. Kiểm tra điều kiện dừng ngay lập tức
+    // 1. Khóa ngay lập tức
+    busy = true; 
+    pTurn = false;
+
+    // Kiểm tra điều kiện dừng (đảm bảo địch còn sống để đánh)
     if (eIdx >= eTeam.length || pIdx >= pTeam.length || eTeam[eIdx].currentHp <= 0) {
         busy = false; 
         return;
@@ -992,26 +1309,21 @@ async function enemyTurn() {
     const e = eTeam[eIdx];
     const enemyEl = document.getElementById('e-sprite');
     const isLastPkmn = (eIdx === eTeam.length - 1);
-    
-    // Kiểm tra hệ (ưu tiên lấy hệ đầu tiên trong mảng types)
     const eType = e.types ? e.types[0] : e.type; 
 
-    // 2. Quyết định Dynamax (Chỉ dùng 1 lần)
+    // 2. Quyết định Dynamax
     let shouldDynamax = !e.hasUsedDynamax && (isLastPkmn || checkTypeAdvantage(eType, p.types[0]));
 
     if (shouldDynamax) {
         e.hasUsedDynamax = true; 
         addLog(`Enemy ${e.name} activates DYNAMAX!!`);
         updateUI();
-
-        // Dynamax luôn trúng (multiplier = 1)
         await attackAnim('e-sprite', 1, false, 160, true); 
-        
         p.currentHp = Math.max(0, p.currentHp - 160);
         e.fury = Math.min(100, e.fury + 50);
     } 
     else {
-        // 3. Chọn kỹ năng (Skill 2 là Ultimate)
+        // 3. Chọn kỹ năng
         const sIdx = (e.fury >= 100) ? 2 : (Math.random() > 0.4 ? 1 : 0);
         const s = e.skills[sIdx];
         
@@ -1019,20 +1331,14 @@ async function enemyTurn() {
             e.fury = 0;
             updateUI(); 
             showElementalAura(enemyEl, e, 'ultimate'); 
-            // Sử dụng eType để lấy màu
             if (e.isLegendary) await announceSkill(s.n, TYPE_COLORS[eType] || '#fff', e.id);
         }
         
         addLog(`Enemy ${e.name} uses ${s.n}!`);
-        
-        // Tính sát thương cộng thêm từ môi trường
         let finalDamage = Math.floor(s.d * (eType === currentMap.type ? 1.3 : 1.0));
-        
-        // Tỷ lệ hụt (Missing)
         const isMissing = Math.random() < 0.1;
         const mult = isMissing ? 0 : 1;
 
-        // Chờ hoạt ảnh kết thúc
         await attackAnim('e-sprite', mult, s.isU, finalDamage, false);
         
         if (!isMissing) {
@@ -1041,51 +1347,67 @@ async function enemyTurn() {
         }
     }
 
-    // 4. Kiểm tra xem người chơi có thua không
-    await checkDeath();
     updateUI(); 
 
-    // 5. Giải phóng lượt (Chỉ thực hiện nếu trận đấu chưa kết thúc)
-    if (pIdx < pTeam.length && eIdx < eTeam.length) {
+    // 4. KIỂM TRA SAU ĐÒN ĐÁNH
+    // Quan trọng: Phải đợi checkDeath xong để biết người chơi có bị hạ gục không
+    const deathResult = await checkDeath(); 
+
+    // 5. GIẢI PHÓNG QUYỀN ĐIỀU KHIỂN
+    // CHỈ trả lượt cho người chơi nếu KHÔNG có ai bị hạ gục ở bước trên
+    if (deathResult === "none") {
         setTimeout(() => { 
-            busy = false; 
-            pTurn = true; 
-            updateUI(); 
+            busy = false;   
+            pTurn = true;   
+            updateUI();     
         }, 500);
-    }
+    } 
+    // Nếu deathResult là "player_changed", hàm checkDeath của bạn 
+    // ĐÃ tự động gọi lại enemyTurn hoặc xử lý lượt tiếp theo rồi, 
+    // nên chúng ta không được set pTurn = true ở đây nữa.
 }
 
 async function checkDeath() {
     const e = eTeam[eIdx], p = pTeam[pIdx];
     
-    if(e && e.currentHp <= 0) {
+    // TRƯỜNG HỢP: Địch bị hạ gục
+    if (e && e.currentHp <= 0) {
+        busy = true; // Khóa tương tác
         addLog(`${e.name} fainted!`);
         eIdx++; 
-        if(eIdx >= eTeam.length) return endGame(true);
         
-        document.getElementById('e-sprite').src = ""; 
-        // Reset thanh máu địch về 100% (của con mới) ngay lập tức để tránh nhìn thấy thanh cũ cạn kiệt
-        document.getElementById('e-hp-fill').style.width = '100%'; 
+        if (eIdx >= eTeam.length) return endGame(true);
         
-        await new Promise(r => setTimeout(r, 1000));
-        await spawnSequence('enemy');
-        updateUI(); // Cập nhật lại UI sau khi spawn con mới
+        document.getElementById('e-sprite').src = ""; // Xóa ảnh cũ ngay
+        await spawnSequence('enemy'); // Đợi ném bóng xong
+        
+        // Sau khi địch ra con mới: Trả lượt cho người chơi
+        pTurn = true;
+        busy = false; 
+        updateUI();
+        return "enemy_changed";
     }
 
-    if(p && p.currentHp <= 0) {
+    // TRƯỜNG HỢP: Người chơi bị hạ gục
+    if (p && p.currentHp <= 0) {
+        busy = true;
         addLog(`${p.name} fainted!`);
         const nxt = pTeam.findIndex(x => x.currentHp > 0);
-        if(nxt === -1) return endGame(false);
         
-        document.getElementById('p-sprite').src = ""; 
-        // Reset thanh máu ta
-        document.getElementById('p-hp-fill').style.width = '100%';
+        if (nxt === -1) return endGame(false);
         
+        document.getElementById('p-sprite').src = "";
         pIdx = nxt; 
-        await new Promise(r => setTimeout(r, 1000));
-        await spawnSequence('player');
-        updateUI(); // Cập nhật lại UI sau khi spawn con mới
+        await spawnSequence('player'); // Đợi hồi quân
+        
+        // Sau khi ta ra con mới: Lượt thuộc về MÁY
+        pTurn = false;
+        updateUI();
+        setTimeout(enemyTurn, ACTION_DELAY); 
+        return "player_changed";
     }
+    
+    return "none";
 }
 
 async function switchP(i) {
@@ -1159,7 +1481,16 @@ function updateUI() {
     document.getElementById('e-balls').innerHTML = eTeam.map(pk => `<div class="w-2 h-2 rounded-full ${pk.currentHp <= 0 ? 'bg-gray-400' : 'bg-red-500'}"></div>`).join('');
     
     // Cảnh báo máu thấp
-    if(p.currentHp > 0 && p.currentHp < (p.hp * 0.2)) playSfx('low-hp');
+    if (p.currentHp > 0 && p.currentHp < (p.hp * 0.2)) {
+        if (!p.lowHpWarned) { 
+            playSfx('low-hp');
+            p.lowHpWarned = true; // Đánh dấu con này đã kêu rồi, không kêu nữa
+            addLog(`WARNING: ${p.name} is low on HP!`); 
+        }
+        } else if (p.currentHp >= (p.hp * 0.2)) {
+        // Nếu Pokemon được hồi máu lên trên 20%, reset để có thể kêu lại nếu máu tụt xuống sau đó
+        p.lowHpWarned = false; 
+    }
 
     // 6. VẼ LẠI SKILLS-BOX
     document.getElementById('skills-box').innerHTML = p.skills.map((s, i) => {

@@ -146,4 +146,153 @@
 </div>
 </body>
     <script src="script/script.js"></script>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokemon Arena - Hit & Shake Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+    <!-- Audio Elements -->
+    <audio id="audio-click" src="audio/click.mp3"></audio>
+    <audio id="audio-dynamax" src="audio/dynamax.mp3"></audio>
+    <audio id="audio-game-over" src="audio/game-over.mp3"></audio>
+    <audio id="audio-low-hp" src="audio/low-hp-pokemon.mp3"></audio>
+    <audio id="audio-missing" src="audio/missing.mp3"></audio>
+    <audio id="audio-nem" src="audio/nem-pokemon-vao-san.mp3"></audio>
+    <audio id="audio-bgm" src="audio/nhac-nen.mp3" loop></audio>
+    <audio id="audio-switch" src="audio/switch-pokemon.mp3"></audio>
+    <audio id="audio-ultimate" src="audio/ultimate.mp3"></audio>
+    <audio id="audio-spawn" src="audio/vao-tran-dau.mp3"></audio>
+    <audio id="audio-win" src="audio/win.mp3"></audio>
+    <audio id="audio-hit" src="audio/hit.mp3"></audio> <!-- THÊM SOUND HIT -->
+    <audio id="audio-hit-damage" src="audio/hit-damage.mp3"></audio>
+
+    <img id="ball-projectile" src="" class="fixed hidden z-[100] w-10 h-10 pixel-img" style="pointer-events: none; transition: none;">
+
+    <div id="shutdown-screen">
+        <div class="text-3xl mb-4 text-red-600">GAME CLOSED</div>
+        <div class="text-[10px] text-gray-400 mb-10">Trainer has left the arena.</div>
+        <button onclick="location.reload()" class="back-btn pixel-font text-[10px] block mx-auto border-2 border-gray-500 text-gray-500">HOME</button>
+        <button onclick="logout()" class="back-btn pixel-font text-[10px] block mx-auto border-2   border-red-500 text-red-500">LOGOUT</button>
+    </div>
+
+    <div id="selection-screen" class="fixed inset-0 z-[100] bg-[#1e1e1e] p-4 flex flex-col items-center">
+        <div class="w-full max-w-6xl h-full flex flex-col">
+<div class="bg-red-600 p-5 rounded-t-3xl border-b-8 border-black flex justify-between items-center shadow-inner">
+    <div class="flex items-center">
+        <div class="flex gap-2 mr-3 bg-[#333] p-2 rounded-full border-2 border-black shadow-lg">
+            <div class="w-6 h-6 rounded-full bg-blue-400 border-2 border-white animate-pulse shadow-[0_0_15px_rgba(96,165,250,0.9)]"></div>
+            <div class="flex gap-1 items-start mt-1">
+                <div class="w-2 h-2 rounded-full bg-red-500 border border-black"></div>
+                <div class="w-2 h-2 rounded-full bg-yellow-400 border border-black"></div>
+                <div class="w-2 h-2 rounded-full bg-green-500 border border-black"></div>
+            </div>
+        </div>
+        <h1 class="pixel-font text-white text-xl ml-2">Pokédex Arena</h1>
+    </div>
+<div class="flex items-center gap-2">
+    <div class="flex items-center bg-black/40 rounded-lg border-2 border-white/20 overflow-hidden">
+        <input type="text" 
+                id="manual-search-input" 
+                placeholder="Search..." 
+                class="bg-transparent px-2 py-1 text-[10px] pixel-font text-white w-28 outline-none border-none">
+        
+        <button onclick="executeManualSearch()" 
+                class="bg-blue-600 hover:bg-blue-500 px-2 py-1 border-l-2 border-white/20 transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+        </button>
+    </div>
+
+    <div class="bg-black/20 px-3 py-2 rounded-full text-white pixel-font text-[10px] border border-white/10 shrink-0">
+        Team: <span id="count" class="text-yellow-400">0</span>/<span id="max-count">3</span>
+    </div>
+    
+    <button onclick="quitGame()" class="exit-btn pixel-font ml-1">X</button>
+</div>
+</div>
+            <div class="bg-[#e0e7e9] flex-grow p-6 rounded-b-3xl border-x-8 border-b-8 border-black flex flex-col overflow-hidden relative">
+                <div class="mode-selector pixel-font">
+                    <button id="mode-easy" onclick="setDifficulty('EASY')" class="mode-btn active">EASY (3 PKM)</button>
+                    <button id="mode-med" onclick="setDifficulty('MEDIUM')" class="mode-btn">MEDIUM (4 PKM)</button>
+                    <button id="mode-hard" onclick="setDifficulty('HARD')" class="mode-btn">HARD (5 PKM)</button>
+                </div>
+                <div class="filter-container-wrapper"><div id="filter-container" class="filter-scroll"></div></div>
+                <div id="pokedex" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-10 gap-4 mb-6 overflow-y-auto p-4 bg-slate-50 rounded-2xl"></div>
+                <button id="start-btn" onclick="startGame()" disabled class="pixel-font bg-red-600 text-white px-10 py-5 rounded-xl border-b-8 border-red-900 opacity-50 cursor-not-allowed transition-all">START BATTLE</button>
+            </div>
+        </div>
+    </div>
+<div class="game-viewport">
+<div class="game-wrapper">
+    <div id="battle-screen" class="hidden w-full bg-black border-[10px] border-black rounded-lg shadow-2xl overflow-hidden relative">
+        <button onclick="backToMenu()" class="absolute top-4 right-4 z-50 back-btn pixel-font text-[8px]">&lt; BACK</button>
+
+        <div id="battle-dimmer"></div>
+
+        <div id="skill-announcement" class="pixel-font">
+            <div class="announcement-content">
+                <img id="announcement-pkm-img" src="" class="announcement-sprite">
+                <div id="announcement-skill-name" class="announcement-text">SKILL NAME</div>
+            </div>
+        </div>
+
+        <div class="battle-scene" id="main-battle-scene">
+            <div id="thunder-overlay" class="thunder-flash"></div>
+            <div id="weather-container" class="weather-layer"></div>
+            <div class="grass-platform e-platform"></div>
+            <div class="absolute top-16 right-48 flex flex-col items-center"> <img id="e-sprite" src="" class="w-44 h-44 pixel-img opacity-0 scale-0">
+</div>
+            <div class="pk-ui-box e-ui" id="e-ui-container">
+                <div class="flex justify-between items-center pixel-font text-[10px] mb-1">
+                    <div class="flex items-center"><span id="e-name">---</span><span id="e-type-slot"></span></div>
+                    <span>Lv100</span>
+                </div>
+                <div class="flex gap-1 justify-end flex-wrap" id="e-balls"></div>
+                <div class="hp-container"><span class="hp-label">HP</span><div id="e-hp-fill" class="hp-fill hp-green" style="width: 100%"></div></div>
+                <div class="fury-container"><div id="e-fury-fill" class="fury-fill" style="width: 0%"></div></div>
+            </div>
+
+            <div class="grass-platform p-platform"></div>
+            <div class="absolute bottom-24 left-[250px] flex flex-col items-center"> 
+    <img id="p-sprite" src="" class="w-72 h-72 pixel-img opacity-0 scale-0">
+</div>
+            <div class="pk-ui-box p-ui" id="p-ui-container">
+                <div class="flex justify-between items-center pixel-font text-[10px] mb-1">
+                    <div class="flex items-center"><span id="p-name">---</span><span id="p-type-slot"></span></div>
+                    <span>Lv100</span>
+                </div>
+                <div class="flex gap-1 flex-wrap" id="p-balls"></div>
+                <div class="hp-container"><span class="hp-label">HP</span><div id="p-hp-fill" class="hp-fill hp-green" style="width: 100%"></div></div>
+                <div class="flex justify-end pixel-font text-[8px] mt-1"><span id="p-hp-text">100/100</span></div>
+                <div class="fury-container"><div id="p-fury-fill" class="fury-fill" style="width: 0%"></div></div>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div id="log-box" class="msg-box overflow-y-auto pixel-font">Arena Ready... Battle Start!</div>
+            <div id="skills-box" class="skills-grid"></div>
+            <div id="switch-area" class="p-3 border-l-4 border-black bg-[#330033] flex flex-col">
+                <div id="switch-limit-text" class="pixel-font text-[7px] text-red-600 text-center mb-2">Switchs: 2 left</div>
+                <div id="switch-box" class="flex flex-col gap-2 overflow-y-auto flex-grow"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="overlay" class="fixed inset-0 bg-red-600/95 hidden z-[200] flex-col items-center justify-center p-6 text-center">
+        <h2 id="over-title" class="pixel-font text-6xl mb-12 text-white">VICTORY</h2>
+        <div class="flex gap-4">
+            <button onclick="location.reload()" class="pixel-font bg-white text-red-600 px-12 py-5 rounded-lg border-b-4 border-slate-300">RESTART</button>
+            <button onclick="backToMenu()" class="pixel-font bg-slate-800 text-white px-12 py-5 rounded-lg border-b-4 border-black">HOME</button>
+        </div>
+    </div>
+</div>
+</body>
+    <script src="script/script.js"></script>
 </html>
