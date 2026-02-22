@@ -1,57 +1,186 @@
-# 🎮 Pokémon Arena: Hit & Shake Edition
+# 🎮 Pokemon Arena
 
-A high-energy, web-based Pokémon turn-based strategy game featuring retro pixel-art aesthetics and modern combat mechanics.
+> A modern turn-based Pokémon battle game built with HTML, CSS, and Vanilla JavaScript.
 
-![Pokémon Battle](https://img.shields.io/badge/Game-Pokémon-red?style=for-the-badge&logo=nintendo)
-![Framework](https://img.shields.io/badge/Built%20with-JavaScript-yellow?style=for-the-badge)
-
-## ✨ Key Features
-
-- **Live PokéAPI Integration:** Access a vast library of Pokémon with real stats, types, and sprites.
-- **Dynamic Battle Environments:** - 7 unique map themes: *Water, Grass, Ice, Fire, Rock, Electric, and Psychic*.
-  - Immersive particle effects: Rain, snow, sandstorms, and glowing auras.
-- **Advanced Combat Mechanics:**
-  - **Fury System:** Build up energy to unleash devastating special moves.
-  - **Dynamax:** Gigantify your Pokémon for a massive power boost.
-  - **Impact Effects:** Features "Screen Shake" and "Flash" animations for a satisfying combat feel.
-- **Strategic Gameplay:** Choose from 3 difficulty levels (Easy, Medium, Hard) and manage type advantages to win.
-
-## 🛠 Tech Stack
-
-- **Frontend:** HTML5, CSS3 (Tailwind CSS).
-- **Logic:** Vanilla JavaScript (ES6+).
-- **Typography:** [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) for that authentic retro feel.
-- **Data Source:** [PokéAPI](https://pokeapi.co/).
-
-## 🚀 Quick Start
-
-Since this is a client-side web application, no installation is required:
-
-1. Download the `game.html` file.
-2. Open the file in any modern web browser (Chrome, Firefox, Edge).
-3. *Note: An active internet connection is required to fetch Pokémon data and external assets.*
-
-## 🎮 How to Play
-
-1. **Selection Phase:** - Pick a difficulty level.
-   - Filter Pokémon by type and assemble your ultimate team.
-2. **Battle Phase:**
-   - Choose from 4 unique skills to attack.
-   - Monitor your **HP** and **Fury** bars.
-   - Use the **Switch** button to swap Pokémon if you are at a type disadvantage.
-   - Trigger **Dynamax** to overwhelm your opponent.
-3. **Objective:** Defeat all enemy Pokémon to claim **VICTORY**.
-
-## 📁 Source Structure
-
-- `class Pokemon`: Handles stats, logic, and state management for each unit.
-- `class Battle`: Manages the turn-based flow, AI decisions, and damage calculations.
-- `MAP_THEMES`: Defines the visual aesthetics and weather effects for the arena.
-
-## 📜 Credits & License
-
-- This project is developed for educational and entertainment purposes.
-- All Pokémon assets, names, and data are trademarks and copyrights of **Nintendo**, **Creatures Inc.**, and **GAME FREAK**.
+Pokemon Arena is a browser-based turn-based battle game inspired by classic Pokémon mechanics.  
+The game features advanced combat systems including Legendary scaling, Dynamax mode, Ultimate skills (Fury system), Arena type boosts, and intelligent AI behavior.
 
 ---
-*Good luck, Trainer! May your strikes be critical!* ⚡🔥🌊
+
+# 📸 Gameplay Overview
+
+---
+
+# 1
+![1](./assets/1.png)
+
+Login Screen  
+A clean pixel-style login interface for accessing the game.
+
+---
+
+# 2
+![2](./assets/2.png)
+
+Register Screen  
+Create a new account with input validation before entering the game.
+
+---
+
+# 3
+![3](./assets/3.png)
+
+Pokédex – Team Selection  
+
+- Choose difficulty (Easy / Medium / Hard)  
+- Filter Pokémon by type  
+- Search functionality  
+- Maximum of 3 Pokémon per team  
+- Organized by region  
+
+---
+
+# 4
+![4](./assets/4.png)
+
+Battle Scene  
+
+- Turn-based combat system  
+- Type effectiveness (x2 / x0.5 / x0)  
+- STAB (Same Type Attack Bonus)  
+- Critical hit system (x2 damage)  
+- Legendary damage scaling  
+- Boss multipliers  
+- Arena-based type bonus  
+
+---
+
+# 5
+<video src="./assets/5.mp4" width="700" controls></video>
+
+Dynamax System  
+
+- Can be activated once per battle  
+- Temporarily increases Pokémon size  
+- Significant damage multiplier boost  
+- Heavy screen shake and impact effects  
+
+---
+
+# 6
+<video src="./assets/6.mp4" width="700" controls></video>
+
+Ultimate Skill (Fury System)  
+
+- Fury builds up through normal attacks  
+- Ultimate becomes available at 100 Fury  
+- Fury resets immediately after use  
+- Full-screen flash animation  
+- High bonus damage  
+
+---
+
+# 7
+<video src="./assets/7.mp4" width="700" controls></video>
+
+Switch Pokémon  
+
+- Switch Pokémon during battle  
+- Proper turn reset logic  
+- Adds strategic depth to gameplay  
+
+---
+
+# 🔥 Damage Formula
+
+Damage is calculated using:
+
+Base Power  
+× Legendary Multiplier  
+× Type Multiplier  
+× Arena Bonus  
+× STAB  
+× Random Factor (0.9 – 1.0)  
+× Critical Multiplier  
++ Ultimate Bonus  
+× Dynamax Multiplier  
+
+The result is then processed through a final damage adjustment system.
+
+---
+
+# 🤖 Smart AI System
+
+The enemy AI is capable of:
+
+- Evaluating expected damage for each skill  
+- Selecting the most optimal move based on type advantage  
+- Activating Dynamax strategically  
+- Using Ultimate when Fury is full  
+- Prioritizing Legendary Pokémon when necessary  
+
+---
+
+# 🛠 Tech Stack
+
+- HTML5  
+- CSS3  
+- Vanilla JavaScript  
+- Custom-built battle engine  
+- DOM-based animation system  
+
+---
+
+# 📂 Project Structure
+pokemon-arena/
+│
+├── index.html # Login / Entry page
+├── game.html # Main battle interface
+├── icon-game.png
+├── README.md
+│
+├── assets/ # README screenshots & demo videos
+│ ├── 1.png
+│ ├── 2.png
+│ ├── 3.png
+│ ├── 4.png
+│ ├── 5.mp4
+│ ├── 6.mp4
+│ └── 7.mp4
+│
+├── css/ # Styling
+│ ├── index.css
+│ └── style.css
+│
+├── script/ # Game logic
+│ ├── index.js
+│ └── script.js
+│
+├── images/ # Arena maps & battle backgrounds
+│ ├── electric-map.png
+│ ├── fire-map.png
+│ ├── grass-map.png
+│ ├── ice-map.png
+│ ├── psychic-map.png
+│ ├── rock-map.png
+│ └── water-map.png
+│
+└── audio/ # Sound effects & background music
+├── battle sounds
+├── dynamax effects
+├── ultimate effects
+└── UI interactions
+---
+
+# 🚀 How To Run
+
+1. Clone the repository  
+2. Open the project folder  
+3. Run using Live Server (VS Code recommended)  
+
+---
+
+# ⚠ Disclaimer
+
+Pokemon Arena is a fan-made project created for educational purposes only.  
+This project is not affiliated with Nintendo or Game Freak.
