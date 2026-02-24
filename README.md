@@ -1,4 +1,4 @@
-# 🎮 Pokemon Arena
+![🎮 Pokemon Arena](./assets/bg-pokemon.gif)
 
 > A modern turn-based Pokémon battle game built with HTML, CSS, and Vanilla JavaScript.
 
@@ -148,7 +148,8 @@ pokemon-arena/
 │   ├── 4.png
 │   ├── 5.gif
 │   ├── 6.gif
-│   └── 7.gif
+│   ├── 7.gif
+│   └── bg-pokemon.gif
 │
 ├── css/
 │   ├── index.css
